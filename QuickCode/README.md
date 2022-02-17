@@ -161,16 +161,24 @@ MyClass.DontDestry = false;	//销毁
 
 ## 2.6 快速反射
 
-| 函数名     | 参数列表                                           | 返回值 | 功能 | 案例 |
-| ---------- | -------------------------------------------------- | ------ | ---- | ---- |
-| Reflect<T> | (string namespacePath, object[] parameters = null) | T      | 反射 | 如下 |
+### API表
 
-参数：
-namespacePath：命名空间路径
-object[] parameters：反射目标类型构造函数参数数组
+| 函数名          | 参数列表                                                     | 返回值  | 功能                   |
+| --------------- | ------------------------------------------------------------ | ------- | ---------------------- |
+| Create\<T>      | (string 命名空间路径, object[] 反射目标类型构造函数参数数组 = null) | T       | 反射                   |
+| ContainProperty | (this object 判断对象, string 属性名称)                      | bool    | 判断对象是否包含属性   |
+| SetProperty     | (object 对象, string 属性名称, object 新值)                  | void    | 利用反射设置对象的属性 |
+| GetProperty     | (object 对象, string 属性名称)                               | dynamic | 利用反射获取对象的属性 |
+
+### 案例
+
+**T Create\<T> (string namespacePath, object[] parameters = null)**
 
 ```csharp
 string namespacePath = "AshCastle.BattleSystem.Logic." + dataRow.ClassName + "_Effect";
-BEffect buffEffect = QuickReflect.Reflect<BEffect>(namespacePath);
+BEffect buffEffect = QuickReflect.Create<BEffect>(namespacePath);
 ```
 
+> 反射相关教程：https://mycroftcooper.github.io/2021/10/28/C%E4%BA%95%E5%8F%8D%E5%B0%84/
+>
+> dynamic相关教程：https://www.cnblogs.com/yayazi/p/8998610.html
