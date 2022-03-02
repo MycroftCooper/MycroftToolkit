@@ -12,6 +12,7 @@
 | v.0.1  | 22-01-20 | 创建工具包，实现四舍五入                       | MycroftCooper |
 | v.0.2  | 22-02-8  | 加入对象池，单例，快速重启，快捷移除组件等功能 | MycroftCooper |
 | v.0.3  | 22-02-15 | 加入计时器，快速反射等功能                     | MycroftCooper |
+| v.0.4  | 22-02-28 | 加入通用字典                                   | MycroftCooper |
 
 # 1. 工具包简介
 
@@ -37,10 +38,10 @@
   通用对象池(含游戏对象)
 - Singleton.cs
   通用单例
-- Timer
-  计时器
 - QuickReflect
   快速反射
+- GeneralDictionary
+  通用字典
 
 # 2. 功能列表
 
@@ -159,7 +160,7 @@ MyClass.DontDestry = false;	//销毁
 
 这样，MyClass就是一个继承MonoBehaviour的单例了
 
-## 2.6 快速反射
+## 2.6 QuickReflect 快速反射
 
 ### API表
 
@@ -182,3 +183,60 @@ BEffect buffEffect = QuickReflect.Create<BEffect>(namespacePath);
 > 反射相关教程：https://mycroftcooper.github.io/2021/10/28/C%E4%BA%95%E5%8F%8D%E5%B0%84/
 >
 > dynamic相关教程：https://www.cnblogs.com/yayazi/p/8998610.html
+
+## 2.7 GeneralDictionary 通用字典
+
+这是一个可以装不同数据类型值的字典
+
+**属性：**
+
+| 属性名                         | 作用                             |
+| ------------------------------ | -------------------------------- |
+| Dictionary<Tkey, object> _dict | 内部封装的字典，可以进行更多操作 |
+
+**方法：**
+
+| 函数名        | 参数列表                 | 返回值 | 功能                         | 案例 |
+| ------------- | ------------------------ | ------ | ---------------------------- | ---- |
+| Count         | ()                       | int    | 字典大小                     | 略   |
+| Add           | (Tkey key, object value) | void   | 增加键值对                   | 略   |
+| Get\<Tvalue>  | (Tkey key)               | Tvalue | 通过键获取值                 | 如下 |
+| Set           | (Tkey key, object value) | bool   | 通过键修改值<br>成功返回True | 略   |
+| ContainsKey   | (Tkey key)               | bool   | 是否存在键                   | 略   |
+| ContainsValue | (object value)           | bool   | 是否存在值                   | 略   |
+| Remove        | (Tkey key)               | bool   | 根据键移除键值对             | 略   |
+| Clear         | ()                       | void   | 清空字典                     | 略   |
+
+**案例：**
+
+```c#
+public class Test {
+    public GeneralDictionary<int> myDict;
+    public Test() {
+        myDict = new GeneralDictionary<int>();
+        myDict.Add(0, 1);
+        myDict.Add(1, "2");
+        myDict.Add(2, 3.1415);
+        myDict.Add(3, DateTime.Now);
+    }
+    public void show() {
+        foreach (var k in myDict._dict.Keys) {
+            Console.WriteLine(k + ":" + myDict.Get<dynamic>(k).ToString());
+        }
+    }
+    public static void Main(string[] args) {
+        Test t = new Test();
+        t.show();
+    }
+}
+```
+
+输出结果：
+
+```
+0:1
+1:2
+2:3.1415
+3:2022/2/23 16:26:31
+```
+
