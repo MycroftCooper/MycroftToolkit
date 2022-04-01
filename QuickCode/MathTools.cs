@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 
 namespace MycroftToolkit.QuickCode {
@@ -18,7 +19,42 @@ namespace MycroftToolkit.QuickCode {
             public static int GetInt(int x, int y) => random.Next(x, y);
             public static float GetFloat(float x = 0, float y = 1) => (float)random.NextDouble() * (y - x) + x;
             public static double GetDouble(double x = 0, double y = 1) => random.NextDouble() * (y - x) + x;
+
+            public static string GetString(string sourceStr, int length) {
+                return new string(
+                        Enumerable.Repeat(sourceStr, length).Select(s => s[random.Next(s.Length)]).ToArray()
+                    );
+            }
+            public static string GetString_Encoding(System.Text.Encoding encoding, int length) {
+                byte[] bytes = new byte[length];
+                random.NextBytes(bytes);
+                return encoding.GetString(bytes);
+            }
+            public static string GetString_Num(int length) {
+                const string nums = "0123456789";
+                return GetString(nums, length);
+            }
+            public static string GetString_English(int length) {
+                const string str = "ABCDEFGHIGKLMNOPQRSTUVWXYZabcdefghigklmnopqrstuvwxyz";
+                return GetString(str, length);
+            }
+            public static string GetString_English_Upper(int length) {
+                const string str = "ABCDEFGHIGKLMNOPQRSTUVWXYZ";
+                return GetString(str, length);
+            }
+            public static string GetString_English_Lower(int length) {
+                const string str = "abcdefghigklmnopqrstuvwxyz";
+                return GetString(str, length);
+            }
+            public static string GetString_Chinese(int length) {
+                byte[] bytes = new byte[length];
+                for (int i = 0; i < length; i++) {
+                    bytes[i] = (byte)GetInt(0x4E00, 0x9FFF);
+                }
+                return System.Text.Encoding.Unicode.GetString(bytes);
+            }
         }
+
         /// <summary>
         /// 中式四舍五入(取整)
         /// </summary>
