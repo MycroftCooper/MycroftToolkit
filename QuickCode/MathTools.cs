@@ -5,57 +5,6 @@ using UnityEngine;
 namespace MycroftToolkit.QuickCode {
     public static class MathTool {
         /// <summary>
-        /// 简单随机数工具包
-        /// @FAM 22.02.08
-        /// </summary>
-        public static class RandomEx {
-            private static System.Random random = new System.Random();
-            /// <summary>
-            /// 获取随机Bool
-            /// </summary>
-            /// <param name="probability">为真的概率(默认0.5)</param>
-            /// <returns>随机Bool</returns>
-            public static bool GetBool(float probability = 0.5f) => random.NextDouble() < probability;
-            public static int GetInt(int x, int y) => random.Next(x, y);
-            public static float GetFloat(float x = 0, float y = 1) => (float)random.NextDouble() * (y - x) + x;
-            public static double GetDouble(double x = 0, double y = 1) => random.NextDouble() * (y - x) + x;
-
-            public static string GetString(string sourceStr, int length) {
-                return new string(
-                        Enumerable.Repeat(sourceStr, length).Select(s => s[random.Next(s.Length)]).ToArray()
-                    );
-            }
-            public static string GetString_Encoding(System.Text.Encoding encoding, int length) {
-                byte[] bytes = new byte[length];
-                random.NextBytes(bytes);
-                return encoding.GetString(bytes);
-            }
-            public static string GetString_Num(int length) {
-                const string nums = "0123456789";
-                return GetString(nums, length);
-            }
-            public static string GetString_English(int length) {
-                const string str = "ABCDEFGHIGKLMNOPQRSTUVWXYZabcdefghigklmnopqrstuvwxyz";
-                return GetString(str, length);
-            }
-            public static string GetString_English_Upper(int length) {
-                const string str = "ABCDEFGHIGKLMNOPQRSTUVWXYZ";
-                return GetString(str, length);
-            }
-            public static string GetString_English_Lower(int length) {
-                const string str = "abcdefghigklmnopqrstuvwxyz";
-                return GetString(str, length);
-            }
-            public static string GetString_Chinese(int length) {
-                byte[] bytes = new byte[length];
-                for (int i = 0; i < length; i++) {
-                    bytes[i] = (byte)GetInt(0x4E00, 0x9FFF);
-                }
-                return System.Text.Encoding.Unicode.GetString(bytes);
-            }
-        }
-
-        /// <summary>
         /// 中式四舍五入(取整)
         /// </summary>
         /// <param name="input">取整目标</param>
@@ -85,6 +34,19 @@ namespace MycroftToolkit.QuickCode {
                 if (input < 0) output--;
             }
             return (float)output / (p / 10);
+        }
+
+        public static Vector3 Bezier2(Vector3 start, Vector3 control, Vector3 end, float t) {
+            return (1 - t) * (1 - t) * start + 2 * (1 - t) * t * control + t * t * end;
+        }
+        public static Vector3[] Bezier2Path(Vector3 start, Vector3 control, Vector3 end, int pointCount) {
+            Vector3[] path = new Vector3[pointCount];
+            for (int i = 1; i <= pointCount; i++) {
+                float t = i * 1f / pointCount;
+                path[i - 1] = Bezier2(start, control, end, t);
+            }
+
+            return path;
         }
     }
 }
