@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 /// <summary>
 /// 简单随机数工具包
@@ -33,21 +33,25 @@ public class QuickRandom {
     /// <param name="probability">为真的概率(默认0.5)</param>
     /// <returns>随机Bool</returns>
     public bool GetBool(float probability = 0.5f) => random.NextDouble() < probability;
+
     /// <summary>
     /// 获取随机Int
     /// </summary>
     /// <returns>[0,x)</returns>
     public int GetInt(int x) => random.Next(x);
+
     /// <summary>
     /// 获取随机Int
     /// </summary>
     /// <returns>[x,y)</returns>
     public int GetInt(int x, int y) => random.Next(x, y);
+
     /// <summary>
     /// 获取随机Float
     /// </summary>
     /// <returns>[x,y)</returns>
     public float GetFloat(float x = 0, float y = 1) => (float)random.NextDouble() * (y - x) + x;
+
     /// <summary>
     /// 获取随机Double
     /// </summary>
@@ -55,28 +59,34 @@ public class QuickRandom {
     public double GetDouble(double x = 0, double y = 1) => random.NextDouble() * (y - x) + x;
     #endregion
 
+
     #region 字符串类型随机
     public string GetString_Encoding(System.Text.Encoding encoding, int length) {
         byte[] bytes = new byte[length];
         random.NextBytes(bytes);
         return encoding.GetString(bytes);
     }
+
     public string GetString_Num(int length) {
         const string nums = "0123456789";
         return nums.GetRandomSubString(length);
     }
+
     public string GetString_English(int length) {
         const string str = "ABCDEFGHIGKLMNOPQRSTUVWXYZabcdefghigklmnopqrstuvwxyz";
         return str.GetRandomSubString(length);
     }
+
     public string GetString_English_Upper(int length) {
         const string str = "ABCDEFGHIGKLMNOPQRSTUVWXYZ";
         return str.GetRandomSubString(length);
     }
+
     public string GetString_English_Lower(int length) {
         const string str = "abcdefghigklmnopqrstuvwxyz";
         return str.GetRandomSubString(length);
     }
+
     public string GetString_Chinese(int length) {
         byte[] bytes = new byte[length];
         for (int i = 0; i < length; i++) {
@@ -119,6 +129,10 @@ public static class RandomExtend {
     public static T[] GetRandomObject_UnRepeatable<T>(this IEnumerable<T> source, int num, QuickRandom qr = null) {
         if (qr == null) qr = QuickRandom.SimpleRandom;
         List<T> list = source.ToList();
+        if (list.Count < num) {
+            Debug.LogError("QuickRandom>Error>要求对象个数大于枚举器内对象个数!");
+            return null;
+        }
         list.Reorder(qr);
         T[] output = list.GetRange(0, num).ToArray();
         return output;
@@ -173,6 +187,10 @@ public static class RandomExtend {
     public static T[] GetRandomWeightObject_UnRepeatable<T>(this IEnumerable<T> source, int num, QuickRandom qr = null) where T : IWeightObject {
         if (qr == null) qr = QuickRandom.SimpleRandom;
         List<T> list = source.ToList();
+        if (list.Count < num) {
+            Debug.LogError("QuickRandom>Error>要求对象个数大于枚举器内对象个数!");
+            return null;
+        }
         T[] output = new T[num];
         var totalWeight = source.Aggregate(0f, (total, current) => total + current.Weight);
         for (int i = 0; i < num; i++) {

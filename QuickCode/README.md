@@ -13,6 +13,7 @@
 | v.0.2  | 22-02-8  | 加入对象池，单例，快速重启，快捷移除组件等功能 | MycroftCooper |
 | v.0.3  | 22-02-15 | 加入计时器，快速反射等功能                     | MycroftCooper |
 | v.0.4  | 22-02-28 | 加入通用字典                                   | MycroftCooper |
+| v.0.5  | 22-04-3  | 丰富随机器功能，可指定随机种子                 | MycroftCooper |
 
 # 1. 工具包简介
 
@@ -42,6 +43,8 @@
   快速反射
 - GeneralDictionary
   通用字典
+- QuickRandom
+  快速随机器
 
 # 2. 功能列表
 
@@ -57,29 +60,16 @@ https://www.cnblogs.com/WalkingSnail/p/8125780.html
 
 C#与Unity中没有“四舍五入”，它采用的是“四舍六入五成双”。使用本工具包，可以快速实现中国式四舍五入。
 
-| 函数名 | 参数列表              | 返回值 | 功能                        | 案例                   |
-| ------ | --------------------- | ------ | --------------------------- | ---------------------- |
-| Round  | (float input)         | int    | 中式四舍五入(取整)-负数支持 | 输入-1.2<br>输出-1     |
-| Round  | (float input, int dp) | float  | 中式四舍五入(精确)-负数支持 | 输入2.45,1<br/>输出2.5 |
+| 函数名      | 参数列表                                                     | 返回值    | 功能                        | 案例                   |
+| ----------- | ------------------------------------------------------------ | --------- | --------------------------- | ---------------------- |
+| Round       | (float input)                                                | int       | 中式四舍五入(取整)-负数支持 | 输入-1.2<br>输出-1     |
+| Round       | (float input, int dp)                                        | float     | 中式四舍五入(精确)-负数支持 | 输入2.45,1<br/>输出2.5 |
+| Bezier2     | (Vector3 start, Vector3 control, Vector3 end, float t)       | Vector3   | 二阶贝塞尔曲线函数          |                        |
+| Bezier2Path | (Vector3 start, Vector3 control, Vector3 end, int pointCount) | Vector3[] | 获取二阶贝塞尔曲线上的点    |                        |
 
 **未来拓展方向:**
 
 - 添加更多便捷简化的常用数学工具
-
-### 2.2.2 RandomEx 简单随机数工具包
-
-Unity的随机数是根据系统时钟取的种子，特别短时间内取随机会导致随机结果相同，这个工具包可以解决这类问题。
-
-| 函数名    | 参数列表                     | 返回值 | 功能                            | 案例                             |
-| --------- | ---------------------------- | ------ | ------------------------------- | -------------------------------- |
-| GetBool   | (float probability = 0.5f)   | bool   | 获取随机Bool值(默认为真概率0.5) | MathLF.RandomEx.GetBool()        |
-| GetInt    | (int x, int y)               | int    | [x,y)的随机数                   | MathLF.RandomEx.GetInt(0,10)     |
-| GetFloat  | (float x = 0, float y = 1)   | float  | [x,y)的随机数                   | MathLF.RandomEx.GetFloat(0f,1f)  |
-| GetDouble | (double x = 0, double y = 1) | double | [x,y)的随机数                   | MathLF.RandomEx.GetDouble(0f,1f) |
-
-**未来拓展方向:**
-
-- 添加更多科学化的随机方式：https://www.jianshu.com/p/d683ee23362e
 
 ## 2.3 ExtensionMethods 扩展方法包
 
@@ -240,3 +230,39 @@ public class Test {
 3:2022/2/23 16:26:31
 ```
 
+
+
+## 2.8 QuickRandom 快速随机器
+
+Unity的随机数是根据系统时钟取的种子，特别短时间内取随机会导致随机结果相同，这个工具包可以解决这类问题。
+
+### 2.8.1 随机器内部方法
+
+| 函数名                  | 参数列表                                    | 返回值 | 功能                            | 案例                                                 |
+| ----------------------- | ------------------------------------------- | ------ | ------------------------------- | ---------------------------------------------------- |
+| GetBool                 | (float probability = 0.5f)                  | bool   | 获取随机Bool值(默认为真概率0.5) | QuickRandom.SimpleRandom.GetBool()                   |
+| GetInt                  | (int x, int y)                              | int    | [x,y)的随机数                   | QuickRandom.SimpleRandom.GetInt(0,10)                |
+| GetInt                  | (int x)                                     | int    | [0,x)的随机数                   | QuickRandom.SimpleRandom.GetInt(10)                  |
+| GetFloat                | (float x = 0, float y = 1)                  | float  | [x,y)的随机数                   | QuickRandom.SimpleRandom.GetFloat(0f,1f)             |
+| GetDouble               | (double x = 0, double y = 1)                | double | [x,y)的随机数                   | QuickRandom.SimpleRandom.GetDouble(0f,1f)            |
+| GetString_Encoding      | (System.Text.Encoding encoding, int length) | string | 获取对应编码的乱码              | QuickRandom.SimpleRandom.GetString_Encoding(0f,1f)   |
+| GetString_Num           | (int length)                                | string | 获取随机数字串                  | QuickRandom.SimpleRandom.GetString_Num(10)           |
+| GetString_English       | (int length)                                | string | 获取随机英文串                  | QuickRandom.SimpleRandom.GetString_English(10)       |
+| GetString_English_Upper | (int length)                                | string | 获取随机大写英文串              | QuickRandom.SimpleRandom.GetString_English_Upper(10) |
+| GetString_English_Lower | (int length)                                | string | 获取随机小写英文串              | QuickRandom.SimpleRandom.GetString_English_Lower(10) |
+| GetString_Chinese       | (int length)                                | string | 获取随机中文串                  | QuickRandom.SimpleRandom.GetString_Chinese(10)       |
+
+### 2.8.2 随机器扩展方法
+
+| 函数名                                | 参数列表                                                     | 返回值 | 功能                             | 案例 |
+| ------------------------------------- | ------------------------------------------------------------ | ------ | -------------------------------- | ---- |
+| GetRandomObject<T>                    | (this IEnumerable<T> source, QuickRandom qr = null)          | T      | 获取随机对象                     | T=   |
+| GetRandomObject_Repeatable<T>         | (this IEnumerable<T> source, int num, QuickRandom qr = null) | T[]    | 获取多个随机对象(可能重复)       | T[]= |
+| GetRandomObject_UnRepeatable<T>       | (this IEnumerable<T> source, int num, QuickRandom qr = null) | T[]    | 获取多个随机对象(不重复)         | T[]= |
+| etRandomWeightObject<T>               | (this IEnumerable<T> source, QuickRandom qr = null) where T : IWeightObject | T      | 获取随机对象(加权)               | T=   |
+| GetRandomWeightObject_Repeatable<T>   | (this IEnumerable<T> source, int num, QuickRandom qr = null) where T : IWeightObject | T[]    | 获取多个随机对象(加权)(可能重复) | T[]= |
+| GetRandomWeightObject_UnRepeatable<T> | (this IEnumerable<T> source, int num, QuickRandom qr = null) where T : IWeightObject | T[]    | 获取多个随机对象(加权)(不重复)   | T[]= |
+
+**未来拓展方向:**
+
+- 添加更多科学化的随机方式：https://www.jianshu.com/p/d683ee23362e
