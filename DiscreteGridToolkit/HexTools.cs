@@ -1,9 +1,11 @@
 ﻿using MycroftToolkit.QuickCode;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace MycroftToolkit.DiscreteGridToolkit.Hex {
+    // 理论参考：https://www.redblobgames.com/grids/hexagons/
     public static class Coordinate_Cube {
         #region 坐标转换
         public static Vector2Int ToAxial(Vector3Int point) {
@@ -30,7 +32,7 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
         #endregion
 
         #region 邻接
-        private static Vector3Int[] neighborsVectors = {
+        public static Vector3Int[] DirectionVectors = {
             new Vector3Int(+1, 0, -1), new Vector3Int(+1, -1, 0), new Vector3Int(0, -1, +1),
             new Vector3Int(-1, 0, +1), new Vector3Int(-1, +1, 0), new Vector3Int(0, +1, -1)
         };
@@ -38,9 +40,12 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
         public static List<Vector3Int> GetNeighbors(Vector3Int point) {
             List<Vector3Int> output = new List<Vector3Int>(6);
             for (int i = 0; i < 6; i++) {
-                output[i] = neighborsVectors[i] + point;
+                output[i] = DirectionVectors[i] + point;
             }
             return output;
+        }
+        public static Vector3Int GetNeighbor(Vector3Int point, Vector3Int direction) {
+            return point + direction;
         }
         #endregion
 
@@ -96,7 +101,115 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
             else s = -q * r;
             return new Vector3Int(q, r, s);
         }
+
+
+        public static List<Vector3Int> GetPointsInArea_Template(Vector3Int centerPos, List<Vector3Int> template) {
+            List<Vector3Int> output = new List<Vector3Int>();
+            foreach (Vector3Int t in template) {
+                output.Add(centerPos + t);
+            }
+            return output;
+        }
+        public static List<Vector3Int> GetPointsInRadius(Vector3Int centerPos, int radius) {
+            List<Vector3Int> output = new List<Vector3Int>();
+            for (int x = -radius; x <= radius; x++) {
+                for (int y = Math.Max(-radius, -x - radius); y <= Math.Min(radius, -x + radius); y++) {
+                    Vector3Int v = new Vector3Int(x, y, -x - y);
+                    output.Add(v + centerPos);
+                }
+            }
+            return output;
+        }
+
+        public static List<Vector3Int> GetPointsInRing_Single(Vector3Int centerPos, int radius) {
+            if (radius == 0) return null;
+            List<Vector3Int> output = new List<Vector3Int>();
+            Vector3Int hex = centerPos + DirectionVectors[4] * radius;
+            for (int i = 0; i < 6; i++) {
+                for (int j = 0; j < radius; j++) {
+                    output.Add(hex);
+                    hex = GetNeighbor(hex, diagonalsVectors[i]);
+                }
+            }
+            return output;
+        }
+        public static List<Vector3Int> GetPointsInRing_Spiral(Vector3Int centerPos, int radius) {
+            if (radius == 0) return null;
+            List<Vector3Int> output = new List<Vector3Int>();
+            for (int i = 1; i <= radius; i++) {
+                output = output.Union(GetPointsInRing_Single(centerPos, i)).ToList();
+            }
+            return output;
+        }
+
+        #region 集合运算
+        /// <summary>
+        /// 取两点集交集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集2</param>
+        /// <returns>两点集交集</returns>
+        public static List<Vector3Int> GetIntersect_Set(List<Vector3Int> pointSet1, List<Vector3Int> pointSet2)
+        => pointSet1.Intersect(pointSet2).ToList();
+
+
+        /// <summary>
+        /// 两点集是否有交集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集2</param>
+        /// <returns>是否相交</returns>
+        public static bool IsIntersect_Set(List<Vector3Int> pointSet1, List<Vector3Int> pointSet2)
+            => pointSet1.Intersect(pointSet2).ToList().Count > 0;
+
+
+        /// <summary>
+        /// 取两点集并集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集2</param>
+        /// <returns>两点集并集</returns>
+        public static List<Vector3Int> GetUnion_Set(List<Vector3Int> pointSet1, List<Vector3Int> pointSet2)
+            => pointSet1.Union(pointSet2).ToList();
+
+
+        /// <summary>
+        /// 取两点集差集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集1</param>
+        /// <returns>两点集差集</returns>
+        public static List<Vector3Int> GetExcept_Set(List<Vector3Int> pointSet1, List<Vector3Int> pointSet2)
+            => pointSet1.Except(pointSet2).ToList();
+
+        #endregion
+
+        #region 旋转
+        public static Vector3Int Rotate60(Vector3Int centerPos, Vector3Int pos) {
+            Vector3Int t1 = pos - centerPos;
+            Vector3Int t2 = new Vector3Int(-t1.y, -t1.z, -t1.x);
+            return t2 + centerPos;
+        }
+        public static Vector3Int RotateN60(Vector3Int centerPos, Vector3Int pos) {
+            Vector3Int t1 = pos - centerPos;
+            Vector3Int t2 = new Vector3Int(-t1.z, -t1.x, -t1.y);
+            return t2 + centerPos;
+        }
+        public static Vector3Int Rotate(Vector3Int centerPos, Vector3Int pos, int time) {
+            if (time == 0) return pos;
+            time = time % 6;
+            Vector3Int output = pos;
+            for (int i = 0; i < Math.Abs(time); i++) {
+                if (time > 0)
+                    output = Rotate60(output, centerPos);
+                else
+                    output = RotateN60(output, centerPos);
+            }
+            return output;
+        }
+        #endregion
     }
+
 
     public static class Coordinate_Axial {
         #region 坐标转换
@@ -170,6 +283,67 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
             Vector3Int cubePos = Coordinate_Cube.Round(pos);
             return Coordinate_Cube.ToAxial(cubePos);
         }
+
+        public static List<Vector2Int> GetPointsInArea_Template(Vector2Int centerPos, List<Vector2Int> template) {
+            List<Vector2Int> output = new List<Vector2Int>();
+            foreach (Vector2Int t in template) {
+                output.Add(centerPos + t);
+            }
+            return output;
+        }
+        public static List<Vector2Int> GetPointsInRadius(Vector2Int centerPos, int radius) {
+            List<Vector2Int> output = new List<Vector2Int>();
+            for (int x = -radius; x <= radius; x++) {
+                for (int y = Math.Max(-radius, -x - radius); y <= Math.Min(radius, -x + radius); y++) {
+                    Vector2Int v = new Vector2Int(x, y);
+                    output.Add(v + centerPos);
+                }
+            }
+            return output;
+        }
+
+
+        #region 集合运算
+        /// <summary>
+        /// 取两点集交集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集2</param>
+        /// <returns>两点集交集</returns>
+        public static List<Vector2Int> GetIntersect_Set(List<Vector2Int> pointSet1, List<Vector2Int> pointSet2)
+            => pointSet1.Intersect(pointSet2).ToList();
+
+
+        /// <summary>
+        /// 两点集是否有交集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集2</param>
+        /// <returns>是否相交</returns>
+        public static bool IsIntersect_Set(List<Vector2Int> pointSet1, List<Vector2Int> pointSet2)
+            => pointSet1.Intersect(pointSet2).ToList().Count > 0;
+
+
+        /// <summary>
+        /// 取两点集并集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集2</param>
+        /// <returns>两点集并集</returns>
+        public static List<Vector2Int> GetUnion_Set(List<Vector2Int> pointSet1, List<Vector2Int> pointSet2)
+            => pointSet1.Union(pointSet2).ToList();
+
+
+        /// <summary>
+        /// 取两点集差集
+        /// </summary>
+        /// <param name="pointSet1">点集1</param>
+        /// <param name="pointSet2">点集1</param>
+        /// <returns>两点集差集</returns>
+        public static List<Vector2Int> GetExcept_Set(List<Vector2Int> pointSet1, List<Vector2Int> pointSet2)
+            => pointSet1.Except(pointSet2).ToList();
+        #endregion
+
     }
 
     public static class Coordinate_Offset {
