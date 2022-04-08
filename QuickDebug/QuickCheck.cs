@@ -1,5 +1,4 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Collections.Generic;
 #if UNITY_EDITOR
 public class PrefabChecker : EditorWindow {
     private static string errorInfo = "QuickDebug>PrefabChecker>";
-    [MenuItem("QuickDebug/检查预制体引用")]
+    [MenuItem("QuickDebug/检查预制体")]
     private static void CheckPrefab() {
         List<string> listString = new List<string>();
         CollectFiles(Application.dataPath, listString);
