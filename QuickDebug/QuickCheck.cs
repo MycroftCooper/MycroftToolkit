@@ -7,7 +7,7 @@ using System.Collections.Generic;
 public class PrefabChecker : EditorWindow {
     private static string errorInfo = "QuickDebug>PrefabChecker>";
     [MenuItem("QuickDebug/检查预制体")]
-    private static void CheckPrefab() {
+    private static void CheckPrefab_All() {
         List<string> listString = new List<string>();
         CollectFiles(Application.dataPath, listString);
 
@@ -46,6 +46,31 @@ public class PrefabChecker : EditorWindow {
         Debug.Log(errorInfo + "检查完毕!");
     }
 
+    [MenuItem("Assets/检查预制体", false, 38)]
+    private static void CheckPrefab_Select() {
+        GameObject prefab = Selection.activeObject as GameObject;
+        if (!prefab) {
+            Debug.LogErrorFormat(prefab, errorInfo + "被检查物体不是预制体!");
+            return;
+        }
+
+        CheckActive(prefab);
+
+        //获取所有的子节点;
+        Transform[] transforms = prefab.GetComponentsInChildren<Transform>();
+        for (int j = 0; j < transforms.Length; j++) {
+            GameObject obj = transforms[j].gameObject;
+            var components = obj.GetComponents<Component>();
+
+            for (int k = 0; k < components.Length; k++) {
+                if (components[k] == null) {
+                    Debug.LogErrorFormat(obj, errorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", prefab.name, obj.name);
+                    continue;
+                }
+                CheckReference(components[k]);
+            }
+        }
+    }
     private static void CheckActive(GameObject go) {// 检查是否激活
         if (!go.activeSelf) {
             Debug.LogFormat(go, errorInfo + "未激活: {0}", AssetDatabase.GetAssetPath(go));
@@ -57,7 +82,7 @@ public class PrefabChecker : EditorWindow {
         while (iterator.NextVisible(true)) {
             if (iterator.propertyType == SerializedPropertyType.ObjectReference) {
                 if (iterator.objectReferenceValue == null) {
-                    Debug.LogErrorFormat(component.gameObject, errorInfo + "引用为空! 引用名: {0}  引用类型: {1}   路径: {2}", iterator.name, component.GetType().Name, AssetDatabase.GetAssetPath(component.gameObject));
+                    Debug.LogWarningFormat(component.gameObject, errorInfo + "引用为空! 引用名: {0}  引用类型: {1}   路径: {2}", iterator.name, component.GetType().Name, AssetDatabase.GetAssetPath(component.gameObject));
                 }
             }
         }
