@@ -1,7 +1,7 @@
 ﻿
 using UnityEngine;
 namespace MycroftToolkit.QuickCode {
-    public static class VectorConvert {
+    public static class VectorExtension {
         public static Vector3Int ToVec3Int(this Vector3 v3) {
             return new Vector3Int((int)v3.x, (int)v3.y, (int)v3.z);
         }
