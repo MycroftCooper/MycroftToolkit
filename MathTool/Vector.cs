@@ -1,6 +1,29 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 namespace MycroftToolkit.QuickCode {
+    public static class Vector {
+        public static Vector2 Decompose(float length, float azimuth) {
+            float rad = azimuth * Mathf.Deg2Rad;
+            return new Vector2(length * Mathf.Cos(rad), length * Mathf.Sin(rad));
+        }
+        public static Vector3 Decompose(float length, Vector2 azimuth) {
+            Vector2 rad = azimuth * Mathf.Deg2Rad;
+            float x = length * Mathf.Sin(rad.x) * Mathf.Cos(rad.y);
+            float y = length * Mathf.Sin(rad.x) * Mathf.Sin(rad.y);
+            float z = length * Mathf.Cos(rad.x);
+            return new Vector3(x, y, z);
+        }
+        public static (float length, float azimuth) Compose(Vector2 v2) {
+            float length = v2.magnitude;
+            float azimuth = Vector2.SignedAngle(Vector2.right, v2);
+            return (length, azimuth);
+        }
+        public static (float length, Vector2 azimuth) Compose(Vector3 v3) {
+            float length = v3.magnitude;
+            float x = Mathf.Acos(v3.z / length);
+            float y = Mathf.Atan(v3.y / v3.x);
+            return (length, new Vector2(x, y) / Mathf.Deg2Rad);
+        }
+    }
     public static class VectorExtension {
         public static Vector3Int ToVec3Int(this Vector3 v3) {
             return new Vector3Int((int)v3.x, (int)v3.y, (int)v3.z);
