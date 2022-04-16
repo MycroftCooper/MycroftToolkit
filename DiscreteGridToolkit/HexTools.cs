@@ -29,6 +29,31 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
             int x = point.x + (int)((point.y + offset * (point.y & 1)) / 2);
             return new Vector2Int(x, point.y);
         }
+
+        public static Vector3Int ContinuityToDiscrete(Vector2 point, float size, bool isFlat) {
+            float x, y;
+            if (isFlat) {
+                x = (2f / 3 * point.x) / size;
+                y = (-1f / 3 * point.x + Mathf.Sqrt(3) / 3 * point.y) / size;
+            } else {
+                x = (Mathf.Sqrt(3) / 3 * point.x - 1f / 3 * point.y) / size;
+                y = (2f / 3 * point.y) / size;
+            }
+            Vector3 cube = new Vector3(x, y, -(point.x + point.y));
+            return Round(cube);
+        }
+
+        public static Vector2 DiscreteToContinuity(Vector3Int hex, float size, bool isFlat) {
+            float x, y;
+            if (isFlat) {
+                x = size * (3f / 2 * hex.x);
+                y = size * (Mathf.Sqrt(3) / 2f * hex.x + Mathf.Sqrt(3) * hex.y);
+            } else {
+                x = size * (Mathf.Sqrt(3) * hex.x + Mathf.Sqrt(3) / 2f * hex.y);
+                y = size * (3f / 2f * hex.y);
+            }
+            return new Vector2(x, y);
+        }
         #endregion
 
         #region 邻接
@@ -232,6 +257,31 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
         public static Vector2Int ToDoubleWidth(Vector2Int point) {
             return new Vector2Int(2 * point.x + point.y, point.y);
         }
+
+        public static Vector2Int ContinuityToDiscrete(Vector2 point, float size, bool isFlat) {
+            float x, y;
+            if (isFlat) {
+                x = (2f / 3 * point.x) / size;
+                y = (-1f / 3 * point.x + Mathf.Sqrt(3) / 3 * point.y) / size;
+            } else {
+                x = (Mathf.Sqrt(3) / 3 * point.x - 1f / 3 * point.y) / size;
+                y = (2f / 3 * point.y) / size;
+            }
+            Vector3 cube = new Vector3(x, y, -(point.x + point.y));
+            return Round(cube);
+        }
+
+        public static Vector2 DiscreteToContinuity(Vector2Int hex, float size, bool isFlat) {
+            float x, y;
+            if (isFlat) {
+                x = size * (3f / 2 * hex.x);
+                y = size * (Mathf.Sqrt(3) / 2f * hex.x + Mathf.Sqrt(3) * hex.y);
+            } else {
+                x = size * (Mathf.Sqrt(3) * hex.x + Mathf.Sqrt(3) / 2f * hex.y);
+                y = size * (3f / 2f * hex.y);
+            }
+            return new Vector2(x, y);
+        }
         #endregion
 
         #region 邻接
@@ -400,4 +450,3 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
         }
     }
 }
-
