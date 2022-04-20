@@ -134,7 +134,7 @@ namespace MycroftToolkit.QuickCode {
                 Debug.LogError("QuickRandom>Error>要求对象个数大于枚举器内对象个数!");
                 return null;
             }
-            list.Reorder(qr);
+            list.Shuffle(qr);
             T[] output = list.GetRange(0, num).ToArray();
             return output;
         }
@@ -214,7 +214,7 @@ namespace MycroftToolkit.QuickCode {
         /// 重排列
         /// </summary>
         /// <param name="qr">随机器</param>
-        public static void Reorder<T>(this List<T> source, QuickRandom qr = null) {
+        public static void Shuffle<T>(this List<T> source, QuickRandom qr = null) {
             if (qr == null) qr = QuickRandom.SimpleRandom;
             for (var i = 0; i < source.Count; ++i) {
                 int index = qr.GetInt(source.Count);
