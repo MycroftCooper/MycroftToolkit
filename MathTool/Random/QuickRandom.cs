@@ -17,6 +17,7 @@ namespace MycroftToolkit.MathTool {
             set {
                 seed = value;
                 random = new System.Random(seed);
+                if (noise != null) noise.SetSeed(seed);
             }
         }
 
@@ -96,6 +97,14 @@ namespace MycroftToolkit.MathTool {
             return System.Text.Encoding.Unicode.GetString(bytes);
         }
         #endregion
+
+        private QuickNoise noise;
+        public QuickNoise Noise {
+            get {
+                if (noise == null) noise = new QuickNoise(Seed);
+                return noise;
+            }
+        }
     }
     public static class RandomExtend {
         #region 非加权随机

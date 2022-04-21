@@ -13,7 +13,7 @@ using FNLfloat = System.Single;
 
 
 namespace MycroftToolkit.MathTool {
-    public class FastNoiseLite {
+    public class QuickNoise {
         private const short INLINE = 256; // MethodImplOptions.AggressiveInlining;
         private const short OPTIMISE = 512; // MethodImplOptions.AggressiveOptimization;
 
@@ -97,7 +97,7 @@ namespace MycroftToolkit.MathTool {
         /// <summary>
         /// 创建新的FastNoise对象，可选种子
         /// </summary>
-        public FastNoiseLite(int seed = 1337) {
+        public QuickNoise(int seed = 1337) {
             SetSeed(seed);
         }
 
