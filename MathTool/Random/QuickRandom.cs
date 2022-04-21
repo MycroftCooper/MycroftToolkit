@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace MycroftToolkit.QuickCode {
+namespace MycroftToolkit.MathTool {
     /// <summary>
     /// 简单随机数工具包
     /// @FAM 22.02.08

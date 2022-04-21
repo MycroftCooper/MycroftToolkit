@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace MycroftToolkit.QuickCode {
+namespace MycroftToolkit.MathTool {
     public static class Vector {
         public static Vector2 Decompose(float length, float azimuth) {
             float rad = azimuth * Mathf.Deg2Rad;
