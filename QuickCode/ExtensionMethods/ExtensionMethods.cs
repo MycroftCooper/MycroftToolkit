@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace MycroftToolkit.QuickCode {
@@ -7,9 +10,9 @@ namespace MycroftToolkit.QuickCode {
             Component component = obj.GetComponent<Component>();
             if (component != null) {
                 if (immediate) {
-                    Object.DestroyImmediate(component as Object, true);
+                    UnityEngine.Object.DestroyImmediate(component as UnityEngine.Object, true);
                 } else {
-                    Object.Destroy(component as Object);
+                    UnityEngine.Object.Destroy(component as UnityEngine.Object);
                 }
             }
         }
@@ -50,6 +53,14 @@ namespace MycroftToolkit.QuickCode {
             Color tempColor = spriteRenderer.color;
             tempColor.a = alpha;
             spriteRenderer.color = tempColor;
+        }
+
+        public static void ForEach<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, Action<KeyValuePair<TKey, TValue>> action) {
+            if (action == null || dictionary.Count == 0) return;
+            for (int i = 0; i < dictionary.Count; i++) {
+                var item = dictionary.ElementAt(i);
+                action(item);
+            }
         }
     }
 }
