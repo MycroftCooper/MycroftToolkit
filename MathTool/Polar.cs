@@ -7,8 +7,8 @@ using UnityEngine;
 
 namespace MycroftToolkit.MathTool {
     public struct Polar2 {
-        float length;
-        float azimuth;
+        public float length;
+        public float azimuth;
 
         public static readonly Polar2 zeroPolar = new Polar2(0f, 0f);
 
