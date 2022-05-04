@@ -22,8 +22,9 @@ namespace MycroftToolkit.QuickCode {
         }
 
         public T GetObject(bool createIfPoolEmpty = true) {
-            T output = pool.Dequeue();
-            if (output != null) { // 池子没空
+            T output = null;
+            if (pool.Count != 0) { // 池子没空
+                output = pool.Dequeue();
                 UsingCount++;
                 return output;
             }
@@ -86,19 +87,18 @@ namespace MycroftToolkit.QuickCode {
             return newObject;
         }
 
-        public GameObject GetObject(bool createIfPoolEmpty = true, bool setActive = true) {
-            GameObject output = pool.Dequeue();
-            if (output != null) { // 池子没空
+        public GameObject GetObject(Transform parent = null, bool setActive = true, bool createIfPoolEmpty = true) {
+            GameObject output = null;
+            if (pool.Count != 0) { // 池子没空
+                output = pool.Dequeue();
                 UsingCount++;
                 output.gameObject.SetActive(setActive);
-                return output;
-            }
-            if (createIfPoolEmpty) { // 池子空了
+            } else if (createIfPoolEmpty) { // 池子空了
                 UsingCount++;
                 output = createNewGO(setActive);
-                return output;
             }
-            return null;
+            if (output != null) output.transform.parent = parent;
+            return output;
         }
 
         public bool Recycle(GameObject obj, bool setActive = false) {
@@ -110,6 +110,7 @@ namespace MycroftToolkit.QuickCode {
             }
             obj.gameObject.SetActive(setActive);
             pool.Enqueue(obj);
+            if (Parent != null) obj.transform.parent = Parent;
             return true;
         }
 
@@ -156,8 +157,9 @@ namespace MycroftToolkit.QuickCode {
         }
 
         public T GetObject(bool createIfPoolEmpty = true, bool setEnabled = true) {
-            T output = pool.Dequeue();
-            if (output != null) { // 池子没空
+            T output = null;
+            if (pool.Count != 0) { // 池子没空
+                output = pool.Dequeue();
                 UsingCount++;
                 output.enabled = setEnabled;
                 return output;
