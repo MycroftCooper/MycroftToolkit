@@ -149,7 +149,7 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
             /// <param name="pos1">点一坐标</param>
             /// <param name="pos2">点二坐标</param>
             /// <returns>点集</returns>
-            public static List<Vector2Int> GetPointsInArea_Block(Vector2Int pos1, Vector2Int pos2) {
+            public static List<Vector2Int> GetPointsInArea_Block_Points(Vector2Int pos1, Vector2Int pos2) {
                 List<Vector2Int> output = new List<Vector2Int>();
                 int xStart = Math.Min(pos1.x, pos2.x);
                 int xEnd = Math.Max(pos1.x, pos2.x);
@@ -157,6 +157,26 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
                 int yEnd = Math.Max(pos1.y, pos2.y);
                 for (int x = xStart; x <= xEnd; x++) {
                     for (int y = yStart; y <= yEnd; y++) {
+                        Vector2Int p = new Vector2Int(x, y);
+                        output.Add(p);
+                    }
+                }
+                return output;
+            }
+            /// <summary>
+            /// 获取方块区域内点集
+            /// </summary>
+            /// <param name="pos">起始坐标(左下角)</param>
+            /// <param name="pos2">区域大小</param>
+            /// <returns>点集</returns>
+            public static List<Vector2Int> GetPointsInArea_Block_Size(Vector2Int pos, Vector2Int size) {
+                List<Vector2Int> output = new List<Vector2Int>();
+                int xStart = pos.x;
+                int xEnd = pos.x + size.x;
+                int yStart = pos.y;
+                int yEnd = pos.y + size.y;
+                for (int x = xStart; x < xEnd; x++) {
+                    for (int y = yStart; y < yEnd; y++) {
                         Vector2Int p = new Vector2Int(x, y);
                         output.Add(p);
                     }
