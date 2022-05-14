@@ -26,7 +26,14 @@ namespace MycroftToolkit.MathTool {
         public QuickRandom(int seed) => Seed = seed;
         public QuickRandom() => Seed = (int)System.DateTime.Now.Ticks + new System.Random().Next(int.MinValue, int.MaxValue);
 
-        public static QuickRandom SimpleRandom = new QuickRandom();
+        private static QuickRandom _simple = null;
+        public static QuickRandom simple {
+            get {
+                if (_simple == null)
+                    _simple = new QuickRandom();
+                return _simple;
+            }
+        }
 
         #region 基础数据类型随机
         /// <summary>
@@ -114,7 +121,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static T GetRandomObject<T>(this IEnumerable<T> source, QuickRandom qr = null) {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             T[] array = source.ToArray();
             return array[qr.GetInt(array.Length)];
         }
@@ -126,7 +133,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static T[] GetRandomObject_Repeatable<T>(this IEnumerable<T> source, int num, QuickRandom qr = null) {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             T[] array = source.ToArray();
             T[] output = Enumerable.Repeat(array, num).
                     Select(s => s[qr.GetInt(s.Length)]).ToArray();
@@ -140,7 +147,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static T[] GetRandomObject_UnRepeatable<T>(this IEnumerable<T> source, int num, QuickRandom qr = null) {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             List<T> list = source.ToList();
             if (list.Count < num) {
                 Debug.LogError("QuickRandom>Error>要求对象个数大于枚举器内对象个数!");
@@ -159,7 +166,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static T GetRandomWeightObject<T>(this IEnumerable<T> source, QuickRandom qr = null) where T : IWeightObject {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             var totalWeight = source.Aggregate(0f, (total, current) => total + current.Weight);
             var targetWeight = qr.GetFloat(totalWeight);
             foreach (var item in source) {
@@ -178,7 +185,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static T[] GetRandomWeightObject_Repeatable<T>(this IEnumerable<T> source, int num, QuickRandom qr = null) where T : IWeightObject {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             T[] output = new T[num];
             var totalWeight = source.Aggregate(0f, (total, current) => total + current.Weight);
             for (int i = 0; i < num; i++) {
@@ -201,7 +208,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static T[] GetRandomWeightObject_UnRepeatable<T>(this IEnumerable<T> source, int num, QuickRandom qr = null) where T : IWeightObject {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             List<T> list = source.ToList();
             if (list.Count < num) {
                 Debug.LogError("QuickRandom>Error>要求对象个数大于枚举器内对象个数!");
@@ -231,7 +238,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="qr">随机器</param>
         public static void Shuffle<T>(this List<T> source, QuickRandom qr = null) {
             if (source.Count() == 0) throw new System.IndexOutOfRangeException();
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             for (var i = 0; i < source.Count; ++i) {
                 int index = qr.GetInt(source.Count);
                 T t = source[index];
@@ -247,7 +254,7 @@ namespace MycroftToolkit.MathTool {
         /// <param name="length">目标长度</param>
         /// <param name="qr">随机器</param>
         public static string GetRandomSubString(this string sourceStr, int length, QuickRandom qr = null) {
-            if (qr == null) qr = QuickRandom.SimpleRandom;
+            if (qr == null) qr = QuickRandom.simple;
             return new string(
                     Enumerable.Repeat(sourceStr, length).
                     Select(s => s[qr.GetInt(s.Length)]).ToArray()
@@ -261,7 +268,7 @@ namespace MycroftToolkit.MathTool {
 
     public static class QuickRandom_Shape {
         public static Vector2 GetRandomPoint_Circular(Vector2 pos, float radius, QuickRandom random = null) {
-            if (random == null) random = QuickRandom.SimpleRandom;
+            if (random == null) random = QuickRandom.simple;
             float l = random.GetFloat(0, radius);
             float a = random.GetFloat(0, 360);
             return new Polar2(l, a).ToVector2() + pos;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using MycroftToolkit.MathTool;
 using UnityEngine;
 
 namespace MycroftToolkit.QuickCode {
@@ -97,6 +98,7 @@ namespace MycroftToolkit.QuickCode {
             isPause = false;
             isFinish = false;
             nowExecuteTime = 0;
+
             _timer = Timer.Register(interval, DoTick);
             _timer.isLooped = true;
         }
@@ -194,10 +196,13 @@ namespace MycroftToolkit.QuickCode {
         public override void Start() {
             isPause = false;
             isFinish = false;
+            _ticks = 0;
             nowExecuteTime = 0;
         }
         public override void DoTick() {
-            if (isPause || isFinish || _ticks != interval) return;
+            if (isPause || isFinish) return;
+            _ticks++;
+            if (_ticks != interval) return;
             onTick?.Invoke();
             nowExecuteTime++;
             _ticks = 0;
