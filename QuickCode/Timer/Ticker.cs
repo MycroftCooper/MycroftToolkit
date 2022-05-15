@@ -41,21 +41,32 @@ namespace MycroftToolkit.QuickCode {
     /// 自动计数执行器
     /// </summary>
     public class Ticker_Auto : Ticker {
+        private float _interval;
         /// <summary>
         /// 执行间隔
         /// </summary>
-        public float interval;
+        public float Interval {
+            get => _interval;
+            set {
+                if (value == _interval) return;
+                _interval = value;
+                if (_timer == null) return;
+                _timer.Cancel();
+                _timer = Timer.Register(_interval, DoTick);
+                _timer.isLooped = true;
+            }
+        }
         /// <summary>
         /// 当前计数
         /// </summary>
         public float nowTicks {
-            get => _timer == null ? -1 : _timer.GetTimeElapsed() + nowExecuteTime * interval;
+            get => _timer == null ? -1 : _timer.GetTimeElapsed() + nowExecuteTime * Interval;
         }
         /// <summary>
         /// 目标计数
         /// </summary>
         public float targetTicks {
-            get => isLoop ? -1 : targetExecuteTime * interval;
+            get => isLoop ? -1 : targetExecuteTime * Interval;
         }
         /// <summary>
         /// 剩余计数
@@ -64,7 +75,7 @@ namespace MycroftToolkit.QuickCode {
             get {
                 if (_timer == null) return targetTicks;
                 if (isLoop) return -1;
-                return _timer.GetTimeRemaining() + remainingExecuteTime * interval;
+                return _timer.GetTimeRemaining() + remainingExecuteTime * Interval;
             }
         }
 
@@ -78,7 +89,7 @@ namespace MycroftToolkit.QuickCode {
             isLoop = true;
             isPause = true;
             isFinish = false;
-            this.interval = interval;
+            this.Interval = interval;
             targetExecuteTime = -1;
         }
         /// <summary>
@@ -90,7 +101,7 @@ namespace MycroftToolkit.QuickCode {
             isLoop = false;
             isPause = true;
             isFinish = false;
-            this.interval = interval;
+            this.Interval = interval;
             this.targetExecuteTime = targetExecuteTime;
         }
 
@@ -99,7 +110,7 @@ namespace MycroftToolkit.QuickCode {
             isFinish = false;
             nowExecuteTime = 0;
 
-            _timer = Timer.Register(interval, DoTick);
+            _timer = Timer.Register(Interval, DoTick);
             _timer.isLooped = true;
         }
 
@@ -140,23 +151,30 @@ namespace MycroftToolkit.QuickCode {
     /// 手动计数执行器
     /// </summary>
     public class Ticker_Manual : Ticker {
+        private int _interval;
         /// <summary>
         /// 执行间隔
         /// </summary>
-        public int interval;
+        public int Interval {
+            get => _interval;
+            set {
+                if (value == _interval) return;
+                _interval = value;
+            }
+        }
         private int _ticks;
 
         /// <summary>
         /// 当前计数
         /// </summary>
         public int nowTime {
-            get => _ticks + nowExecuteTime * interval;
+            get => _ticks + nowExecuteTime * _interval;
         }
         /// <summary>
         /// 目标计数
         /// </summary>
         public float targetTime {
-            get => isLoop ? -1 : targetExecuteTime * interval;
+            get => isLoop ? -1 : targetExecuteTime * _interval;
         }
         /// <summary>
         /// 剩余计数
@@ -164,7 +182,7 @@ namespace MycroftToolkit.QuickCode {
         public float remainingTime {
             get {
                 if (isLoop) return -1;
-                return _ticks + remainingExecuteTime * interval;
+                return _ticks + remainingExecuteTime * _interval;
             }
         }
 
@@ -176,7 +194,7 @@ namespace MycroftToolkit.QuickCode {
             isLoop = true;
             isPause = true;
             isFinish = false;
-            this.interval = interval;
+            _interval = interval;
             targetExecuteTime = -1;
         }
 
@@ -189,7 +207,7 @@ namespace MycroftToolkit.QuickCode {
             isLoop = false;
             isPause = true;
             isFinish = false;
-            this.interval = interval;
+            _interval = interval;
             this.targetExecuteTime = targetExecuteTime;
         }
 
@@ -202,7 +220,7 @@ namespace MycroftToolkit.QuickCode {
         public override void DoTick() {
             if (isPause || isFinish) return;
             _ticks++;
-            if (_ticks != interval) return;
+            if (_ticks != _interval) return;
             onTick?.Invoke();
             nowExecuteTime++;
             _ticks = 0;
