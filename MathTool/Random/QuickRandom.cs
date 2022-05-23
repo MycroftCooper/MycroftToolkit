@@ -263,7 +263,7 @@ namespace MycroftToolkit.MathTool {
     }
 
     public interface IWeightObject {
-        public float Weight { get; }
+        public int Weight { get; }
     }
 
     public static class QuickRandom_Shape {
