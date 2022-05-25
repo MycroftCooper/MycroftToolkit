@@ -116,13 +116,17 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             return true;
         }
 
-        public void SetTile(Vector2Int pos, IMyTile tile) {
+        public TileData SetTile(Vector2Int pos, IMyTile tile) {
             TileData td = tile.SetTile(pos, tilemap);
             for (int x = pos.x; x < pos.x + tile.Size.x; x++) {
                 for (int y = pos.y; y < pos.y + tile.Size.y; y++) {
+                    if (x < 0 || x >= logicMap.GetLength(0) || y < 0 || y >= logicMap.GetLength(1)) {
+                        Debug.LogError($"MyTile>Error>瓦片地图越界:({x},{y})");
+                    }
                     logicMap[x, y] = td;
                 }
             }
+            return td;
         }
         public IMyTile GetTile(Vector2Int pos) {
             if (logicMap[pos.x, pos.y] == null) return null;
@@ -136,6 +140,21 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         public TileData GetTileData(Vector2Int pos)
             => logicMap[pos.x, pos.y];
 
+        public void FillTile(Vector2Int start, Vector2Int end, IMyTile tile) {
+            int x, y = start.y;
+            while (y < end.y) {
+                x = start.x;
+                while (x < end.x) {
+                    if (!IsSafe(x, y)) {
+                        x = logicMap[x, y].pos.x + logicMap[x, y].tile.Size.x;
+                        continue;
+                    }
+                    SetTile(new Vector2Int(x, y), tile);
+                    x += tile.Size.x;
+                }
+                y += tile.Size.y;
+            }
+        }
         public void FillRingTile(Vector2Int start, Vector2Int end, Dictionary<int, MyTile> tiles, int width) {
             SetTile(start, tiles[1]);
             SetTile(new Vector2Int(end.x, start.y), tiles[3]);
@@ -196,9 +215,59 @@ namespace MycroftToolkit.DiscreteGridToolkit {
                 }
             }
         }
+
         public void RemoveTile(Vector2Int pos) {
             if (tilemap.HasTile(pos.ToVec3Int()))
                 tilemap.SetTile(pos.ToVec3Int(), null);
         }
+        #region GO专用
+        public void SetTileSprite(Vector2Int pos, Sprite sprite, bool isFlip = false) {
+            MyTile_GO tile = logicMap[pos.x, pos.y].tile as MyTile_GO;
+            if (tile == null) return;
+            tile.go.GetComponent<SpriteRenderer>().sprite = sprite;
+            if (isFlip) tile.go.GetComponent<SpriteRenderer>().flipX = true;
+        }
+        public void SetTileSpriteLayer(Vector2Int pos, string layerName, int layerID) {
+            MyTile_GO tile = logicMap[pos.x, pos.y].tile as MyTile_GO;
+            if (tile == null) return;
+            SpriteRenderer sr = tile.go.GetComponent<SpriteRenderer>();
+            sr.sortingLayerName = layerName;
+            sr.sortingOrder = layerID;
+        }
+        public enum EPivot { Top, Bottom, Left, Right, Center, TopLeft, TopRight, BottomLeft, BottomRight }
+        public void SetTile_Pivot(Vector2Int pos, MyTile_GO tile, EPivot pivot) {
+            TileData td = SetTile(pos, tile);
+            MyTile_GO tg = td.tile as MyTile_GO;
+            switch (pivot) {
+                case EPivot.Top:
+                    tg.go.transform.localPosition = new Vector3(pos.x + tile.Size.x / 2f, pos.y + tile.Size.y);
+                    break;
+                case EPivot.Center:
+                    tg.go.transform.localPosition = new Vector3(pos.x + tile.Size.x / 2f, pos.y + tile.Size.y / 2f);
+                    break;
+                case EPivot.Left:
+                    tg.go.transform.localPosition = new Vector3(pos.x, pos.y + tile.Size.y / 2f);
+                    break;
+                case EPivot.Right:
+                    tg.go.transform.localPosition = new Vector3(pos.x + tile.Size.x, pos.y + tile.Size.y / 2f);
+                    break;
+                case EPivot.Bottom:
+                    tg.go.transform.localPosition = new Vector3(pos.x + tile.Size.x / 2f, pos.y);
+                    break;
+                case EPivot.TopLeft:
+                    tg.go.transform.localPosition = new Vector3(pos.x, pos.y + tile.Size.y);
+                    break;
+                case EPivot.TopRight:
+                    tg.go.transform.localPosition = new Vector3(pos.x + tile.Size.x, pos.y + tile.Size.y);
+                    break;
+                case EPivot.BottomLeft:
+                    tg.go.transform.localPosition = new Vector3(pos.x, pos.y);
+                    break;
+                case EPivot.BottomRight:
+                    tg.go.transform.localPosition = new Vector3(pos.x + tile.Size.x, pos.y);
+                    break;
+            }
+        }
+        #endregion
     }
 }

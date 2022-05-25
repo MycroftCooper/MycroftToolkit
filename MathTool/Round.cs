@@ -34,5 +34,54 @@ namespace MycroftToolkit.MathTool {
             }
             return (float)output / (p / 10);
         }
+
+        /// <summary>
+        /// 指定倍数向上取整
+        /// </summary>
+        /// <param name="input">取整目标</param>
+        /// <param name="multiple">取整倍数</param>
+        /// <returns>取整结果</returns>
+        public static int RoundMultiple_Up(int input, int multiple)
+            => input + multiple - input % multiple;
+        /// <summary>
+        /// 指定倍数向下取整
+        /// </summary>
+        /// <param name="input">取整目标</param>
+        /// <param name="multiple">取整倍数</param>
+        /// <returns>取整结果</returns>
+        public static int RoundMultiple_Down(int input, int multiple)
+            => input - input % multiple;
+        /// <summary>
+        /// 指定倍数接近取整
+        /// </summary>
+        /// <param name="input">取整目标</param>
+        /// <param name="multiple">取整倍数</param>
+        /// <returns>取整结果</returns>
+        public static int RoundMultiple(int input, int multiple)
+            => input % multiple >= (float)multiple / 2f ? input + multiple - input % multiple : input - input % multiple;
+        /// <summary>
+        /// 指定倍数向上取整
+        /// </summary>
+        /// <param name="input">取整目标</param>
+        /// <param name="multiple">取整倍数</param>
+        /// <returns>取整结果</returns>
+        public static float RoundMultiple_Up(float input, float multiple)
+            => input + multiple - input % multiple;
+        /// <summary>
+        /// 指定倍数向下取整
+        /// </summary>
+        /// <param name="input">取整目标</param>
+        /// <param name="multiple">取整倍数</param>
+        /// <returns>取整结果</returns>
+        public static float RoundMultiple_Down(float input, float multiple)
+            => input - input % multiple;
+        /// <summary>
+        /// 指定倍数接近取整
+        /// </summary>
+        /// <param name="input">取整目标</param>
+        /// <param name="multiple">取整倍数</param>
+        /// <returns>取整结果</returns>
+        public static float RoundMultiple(float input, float multiple)
+          => input % multiple >= (float)multiple / 2f ? input + multiple - input % multiple : input - input % multiple;
     }
 }
