@@ -78,6 +78,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             GameObject newGo = GameObject.Instantiate(go, map.transform);
             Vector3 localPos = map.CellToLocal(pos.ToVec3Int());
             newGo.transform.localPosition = localPos;
+            newGo.name = Name;
 
             MyTile_GO newTile = new MyTile_GO(_tileName, _size, newGo);
             return new TileData(pos, newTile);
@@ -104,25 +105,34 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             logicMap = new TileData[size.x, size.y];
         }
 
+        public bool IsInMap(int x, int y)
+           => x >= mapSize.x || x < 0 || y >= mapSize.y || y < 0 ? false : true;
+        public bool IsInMap(Vector2Int pos)
+            => IsInMap(pos.x, pos.y);
         public bool IsSafe(int x, int y) {
-            if (x >= mapSize.x || y >= mapSize.y) return false;
+            if (!IsInMap(x, y)) return false;
             return logicMap[x, y] == null;
         }
         public bool IsSafe(int x, int y, Vector2Int size, Vector2Int range) {
-            if (x + size.x - 1 > range.x || y + size.y - 1 > range.y) return false;
+            if (!IsInMap(x, y) ||
+                !IsInMap(x + size.x - 1, y + size.y - 1) ||
+                x + size.x - 1 > range.x || y + size.y - 1 > range.y)
+                return false;
             if (logicMap[x, y] != null ||
                 logicMap[x + size.x - 1, y + size.y - 1] != null ||
                 logicMap[x + size.x - 1, y] != null) return false;
             return true;
         }
 
-        public TileData SetTile(Vector2Int pos, IMyTile tile) {
+        public TileData SetTile(Vector2Int pos, IMyTile tile, bool isCover = true) {
+            if (!isCover) {
+                RemoveTiles(pos, pos + tile.Size - Vector2Int.one);
+            }
             TileData td = tile.SetTile(pos, tilemap);
             for (int x = pos.x; x < pos.x + tile.Size.x; x++) {
                 for (int y = pos.y; y < pos.y + tile.Size.y; y++) {
-                    if (x < 0 || x >= logicMap.GetLength(0) || y < 0 || y >= logicMap.GetLength(1)) {
+                    if (x < 0 || x >= logicMap.GetLength(0) || y < 0 || y >= logicMap.GetLength(1))
                         Debug.LogError($"MyTile>Error>瓦片地图越界:({x},{y})");
-                    }
                     logicMap[x, y] = td;
                 }
             }
@@ -140,19 +150,19 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         public TileData GetTileData(Vector2Int pos)
             => logicMap[pos.x, pos.y];
 
-        public void FillTile(Vector2Int start, Vector2Int end, IMyTile tile) {
+        public void FillTile(Vector2Int start, Vector2Int end, IMyTile tile, Vector2Int spacing, bool isCover = false) {
             int x, y = start.y;
             while (y < end.y) {
                 x = start.x;
                 while (x < end.x) {
-                    if (!IsSafe(x, y)) {
+                    if (!isCover && !IsSafe(x, y)) {
                         x = logicMap[x, y].pos.x + logicMap[x, y].tile.Size.x;
                         continue;
                     }
-                    SetTile(new Vector2Int(x, y), tile);
-                    x += tile.Size.x;
+                    SetTile(new Vector2Int(x, y), tile, false);
+                    x += tile.Size.x + spacing.x;
                 }
-                y += tile.Size.y;
+                y += tile.Size.y + spacing.y;
             }
         }
         public void FillRingTile(Vector2Int start, Vector2Int end, Dictionary<int, MyTile> tiles, int width) {
@@ -216,9 +226,26 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             }
         }
 
+        public void RemoveTile(int x, int y) => RemoveTile(new Vector2Int(x, y));
         public void RemoveTile(Vector2Int pos) {
-            if (tilemap.HasTile(pos.ToVec3Int()))
-                tilemap.SetTile(pos.ToVec3Int(), null);
+            if (!IsInMap(pos) || logicMap[pos.x, pos.y] == null) return;
+            Vector2Int start = GetTileData(pos).pos;
+            Vector2Int size = GetTileData(pos).tile.Size;
+            for (int x = start.x; x < (start + size).x; x++) {
+                for (int y = start.y; y < (start + size).y; y++) {
+                    if (tilemap.HasTile(pos.Vec3Int()))
+                        tilemap.SetTile(pos.Vec3Int(), null);
+                    if (IsInMap(pos))
+                        logicMap[x, y] = null;
+                }
+            }
+        }
+        public void RemoveTiles(Vector2Int pos1, Vector2Int pos2) {
+            for (int i = pos1.x; i <= pos2.x; i++) {
+                for (int j = pos1.y; j <= pos2.y; j++) {
+                    RemoveTile(i, j);
+                }
+            }
         }
         #region GO专用
         public void SetTileSprite(Vector2Int pos, Sprite sprite, bool isFlip = false) {
