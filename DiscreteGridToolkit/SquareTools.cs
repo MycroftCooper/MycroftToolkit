@@ -127,6 +127,11 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
 
 
         public static class PointsArea {
+            public static bool IsBlockAInBlockB(Vector2Int start1, Vector2Int end1, Vector2Int start2, Vector2Int end2) {
+                if (start1.x > start2.x && start1.y > start2.y && end1.x < end2.x && end1.y < end2.y) return true;
+                return false;
+            }
+
             /// <summary>
             /// 使用模板获取区域内点集
             /// </summary>

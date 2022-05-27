@@ -88,9 +88,12 @@ namespace MycroftToolkit.DiscreteGridToolkit {
     public class TileData {
         public Vector2Int pos;
         public IMyTile tile;
+        public RectInt rect;
+        public Vector2Int spaceSize;
         public TileData(Vector2Int pos, IMyTile tile) {
             this.pos = pos;
             this.tile = tile;
+            rect = new RectInt(pos, tile.Size);
         }
     }
 
@@ -233,8 +236,8 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             Vector2Int size = GetTileData(pos).tile.Size;
             for (int x = start.x; x < (start + size).x; x++) {
                 for (int y = start.y; y < (start + size).y; y++) {
-                    if (tilemap.HasTile(pos.Vec3Int()))
-                        tilemap.SetTile(pos.Vec3Int(), null);
+                    if (tilemap.HasTile(pos.ToVec3Int()))
+                        tilemap.SetTile(pos.ToVec3Int(), null);
                     if (IsInMap(pos))
                         logicMap[x, y] = null;
                 }
