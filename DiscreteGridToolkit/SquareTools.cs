@@ -301,7 +301,8 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
                 List<Vector2Int> line2 = GetPointsInLine_Bresenham(startPos2, endPos2);
                 try {
                     return PointsSetOP.GetIntersect_Set(line1, line2)[0];
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     Console.WriteLine("离散网格工具>获取直线交点>两直线不相交!直线1:{},{}|直线2:{},{}\n" + e.Message, startPos1, endPos1, startPos2, endPos2);
                     return new Vector2Int(0, 0);
                 }

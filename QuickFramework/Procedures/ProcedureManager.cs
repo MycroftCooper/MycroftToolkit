@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using MycroftToolkit.QuickCode;
-using Sirenix.OdinInspector;
 
 namespace MycroftToolkit.QuickFramework.Procedure {
     public class ProcedureManager : MonoSingleton<ProcedureManager> {
-        [ShowInInspector]
         public Dictionary<string, ProcedureBase> procedureDict;
         public string startProcedure;
         public ProcedureBase nowProcedure;
