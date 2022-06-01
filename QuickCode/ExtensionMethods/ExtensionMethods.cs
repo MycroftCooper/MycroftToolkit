@@ -33,6 +33,14 @@ namespace MycroftToolkit.QuickCode {
                 parent = parent.parent;
             return parent;
         }
+        public static T GetGetComponentInAllParents<T>(this GameObject go) where T:MonoBehaviour{
+            GameObject parent = go.transform.parent.gameObject;
+            while (parent != null ) {
+                T output = parent.GetComponent<T>();
+                if (output != null) return output;
+            }
+            return null;
+        }
 
         /// <summary>
         /// 只设置颜色不改变alpha
