@@ -27,6 +27,12 @@ namespace MycroftToolkit.QuickCode {
             tr.rotation = Quaternion.identity;
             tr.localScale = Vector3.zero;
         }
+        public static Transform FindParent(this Transform tr, string name) {
+            Transform parent = tr.parent;
+            while (parent != null && parent.name != name)
+                parent = parent.parent;
+            return parent;
+        }
 
         /// <summary>
         /// 只设置颜色不改变alpha
