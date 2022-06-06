@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 namespace MycroftToolkit.DiscreteGridToolkit {
-    public enum EPointSetType { any, line, rect, radius_d4, radius_d8, radius_euler }
+    public enum EPointSetType { any, line, rect, radius }
     public class PointComparer : IComparer<Vector2Int> {
         public int Compare(Vector2Int x, Vector2Int y) {
             if (x == y) return 0;
@@ -39,6 +39,8 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             this.type = type;
             this._points = new SortedSet<Vector2Int>(points, new PointComparer());
         }
+
+        protected virtual void updatePointSet() { }
 
         public void HasPoint(Vector2Int point)
             => _points.Contains(point);
@@ -145,51 +147,6 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         }
     }
 
-    // 四边形线段
-    public class PS_Line : PointSet {
-        public Vector2Int startPos, endPos;
-        public PS_Line(Vector2Int startPos, Vector2Int endPos) : base(EPointSetType.line) {
-            this.startPos = startPos;
-            this.endPos = endPos;
-            if (startPos == endPos) {
-                _points.Add(startPos);
-                return;
-            }
-            int w = endPos.x - startPos.x;
-            int h = endPos.y - startPos.y;
-            int dx1 = 0, dy1 = 0, dx2 = 0, dy2 = 0;
-            if (w < 0) dx1 = -1; else if (w > 0) dx1 = 1;
-            if (h < 0) dy1 = -1; else if (h > 0) dy1 = 1;
-            if (w < 0) dx2 = -1; else if (w > 0) dx2 = 1;
-            int longest = Math.Abs(w);
-            int shortest = Math.Abs(h);
-            if (!(longest > shortest)) {
-                longest = Math.Abs(h);
-                shortest = Math.Abs(w);
-                if (h < 0) dy2 = -1; else if (h > 0) dy2 = 1;
-                dx2 = 0;
-            }
-            int numerator = longest >> 1;
-            int x = startPos.x;
-            int y = startPos.y;
-            for (int i = 0; i <= longest; i++) {
-                _points.Add(new Vector2Int(x, y));
-                numerator += shortest;
-                if (!(numerator < longest)) {
-                    numerator -= longest;
-                    x += dx1;
-                    y += dy1;
-                } else {
-                    x += dx2;
-                    y += dy2;
-                }
-            }
-        }
-    }
-
-    public class PS_Rect : PointSet {
-
-    }
 
     public static class PointSetFactory {
         public static PointSet GetPointSet(EPointSetType type = EPointSetType.any) {
