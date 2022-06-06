@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace MycroftToolkit.MathTool {
+namespace MycroftToolkit.DiscreteGridToolkit {
     public static class VectorExtension {
         public static Polar2 ToPolar2(this Vector2 v2) {
             float length = v2.magnitude;

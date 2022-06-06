@@ -39,6 +39,14 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             this.type = type;
             this._points = new SortedSet<Vector2Int>(points, new PointComparer());
         }
+        public PointSet(Vector2Int centerPos, List<Vector2Int> template) {
+            type = EPointSetType.any;
+            _points = new SortedSet<Vector2Int>();
+            foreach (Vector2Int pos in template) {
+                Vector2Int p = centerPos + pos;
+                _points.Add(p);
+            }
+        }
 
         protected virtual void updatePointSet() { }
 
@@ -49,7 +57,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
                 action?.Invoke(point);
             }
         }
-        public PointSet Copy() => PointSetFactory.GetPointSet(_points, type);
+        public PointSet Copy() => new PointSet(_points, type);
         public bool AddPoint(Vector2Int point)
             => !_points.Add(point);
         public bool AddPoints(List<Vector2Int> points) {
@@ -73,7 +81,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// </summary>
         public PointSet Intersect(PointSet pointSet) {
             SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)_points.Intersect<Vector2Int>(pointSet._points);
-            return PointSetFactory.GetPointSet(newPoints);
+            return new PointSet(newPoints);
         }
         /// <summary>
         /// 两点集是否有交集
@@ -89,7 +97,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// </summary>
         public static PointSet operator +(PointSet pointSet1, PointSet pointSet2) {
             SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1._points.Union<Vector2Int>(pointSet2._points);
-            return PointSetFactory.GetPointSet(newPoints);
+            return new PointSet(newPoints);
         }
 
         /// <summary>
@@ -97,7 +105,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// </summary>
         public static PointSet operator -(PointSet pointSet1, PointSet pointSet2) {
             SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1._points.Except<Vector2Int>(pointSet2._points);
-            return PointSetFactory.GetPointSet(newPoints);
+            return new PointSet(newPoints);
         }
         /// <summary>
         /// 是否为指定集合的真子集
@@ -144,69 +152,6 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             }
             _points.Clear();
             _points = newPS;
-        }
-    }
-
-
-    public static class PointSetFactory {
-        public static PointSet GetPointSet(EPointSetType type = EPointSetType.any) {
-            PointSet ps = new PointSet();
-            ps.type = type;
-            ps._points = new SortedSet<Vector2Int>(new PointComparer());
-            return ps;
-        }
-        public static PointSet GetPointSet(List<Vector2Int> points, EPointSetType type = EPointSetType.any) {
-            PointSet ps = new PointSet();
-            ps.type = type;
-            ps._points = new SortedSet<Vector2Int>(new PointComparer());
-            foreach (var point in points) {
-                ps._points.Add(point);
-            }
-            return ps;
-        }
-        public static PointSet GetPointSet(SortedSet<Vector2Int> points, EPointSetType type = EPointSetType.any) {
-            PointSet ps = new PointSet();
-            ps.type = type;
-            ps._points = new SortedSet<Vector2Int>(points, new PointComparer());
-            return ps;
-        }
-        public static PointSet GetPointSet_Template(Vector2Int centerPos, List<Vector2Int> template) {
-            List<Vector2Int> result = new List<Vector2Int>();
-            foreach (Vector2Int pos in template) {
-                Vector2Int p = centerPos + pos;
-                result.Add(p);
-            }
-            return GetPointSet(result);
-        }
-
-        public static PointSet GetPointSet_Rect_2Point(Vector2Int pos1, Vector2Int pos2) {
-            PointSet output = GetPointSet(EPointSetType.rect);
-            int xStart = Math.Min(pos1.x, pos2.x);
-            int xEnd = Math.Max(pos1.x, pos2.x);
-            int yStart = Math.Min(pos1.y, pos2.y);
-            int yEnd = Math.Max(pos1.y, pos2.y);
-            for (int x = xStart; x <= xEnd; x++) {
-                for (int y = yStart; y <= yEnd; y++) {
-                    Vector2Int p = new Vector2Int(x, y);
-                    output.AddPoint(p);
-                }
-            }
-            return output;
-        }
-
-        public static PointSet GetPointSet_Rect_Size(Vector2Int pos, Vector2Int size) {
-            PointSet output = GetPointSet(EPointSetType.rect);
-            int xStart = pos.x;
-            int xEnd = pos.x + size.x;
-            int yStart = pos.y;
-            int yEnd = pos.y + size.y;
-            for (int x = xStart; x < xEnd; x++) {
-                for (int y = yStart; y < yEnd; y++) {
-                    Vector2Int p = new Vector2Int(x, y);
-                    output.AddPoint(p);
-                }
-            }
-            return output;
         }
     }
 }

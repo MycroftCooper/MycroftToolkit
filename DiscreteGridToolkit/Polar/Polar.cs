@@ -5,7 +5,7 @@ using UnityEngine;
 // 理论来源：https://www.doc88.com/p-1542101922865.html
 // https://en.wikipedia.org/wiki/Spherical_coordinate_system
 
-namespace MycroftToolkit.MathTool {
+namespace MycroftToolkit.DiscreteGridToolkit {
     public struct Polar2 {
         public float length;
         public float azimuth;
