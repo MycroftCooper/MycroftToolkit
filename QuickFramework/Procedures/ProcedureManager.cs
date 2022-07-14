@@ -1,61 +1,61 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 using MycroftToolkit.QuickCode;
 
 namespace MycroftToolkit.QuickFramework.Procedure {
     public class ProcedureManager : MonoSingleton<ProcedureManager> {
-        public Dictionary<string, ProcedureBase> procedureDict;
+        public Dictionary<string, ProcedureBase> ProcedureDict;
         public string startProcedure;
-        public ProcedureBase nowProcedure;
+        public ProcedureBase NowProcedure;
 
         void Start() {
-            procedureDict = new Dictionary<string, ProcedureBase>();
+            ProcedureDict = new Dictionary<string, ProcedureBase>();
             if (string.IsNullOrEmpty(startProcedure)) {
                 Debug.LogError($"QuickFramework.Procedure>Error> 未找到初始流程{startProcedure}");
                 return;
             }
-            ProcedureBase start = QuickReflect.Create<ProcedureBase>("MycroftToolkit.Runtime.Procedure." + startProcedure);
+
+            ProcedureBase start = QuickReflect.CreateInstance<ProcedureBase>("MycroftToolkit.Runtime.Procedure." + startProcedure);
             start.OnInit();
-            procedureDict.Add(startProcedure, start);
+            ProcedureDict.Add(startProcedure, start);
             start.OnEnter();
-            nowProcedure = start;
+            NowProcedure = start;
         }
 
         public void ChangeProcedure<T>() where T : ProcedureBase, new() {
             string tName = typeof(T).Name;
             ProcedureBase next;
-            if (procedureDict.ContainsKey(tName))
-                next = procedureDict[tName];
+            if (ProcedureDict.ContainsKey(tName))
+                next = ProcedureDict[tName];
             else {
                 next = new T();
                 next.OnInit();
-                procedureDict.Add(tName, next);
+                ProcedureDict.Add(tName, next);
             }
 
-            nowProcedure.OnLeave(false);
+            NowProcedure.OnLeave(false);
             next.OnEnter();
-            nowProcedure = next;
+            NowProcedure = next;
         }
 
 
         void Update() {
-            if (nowProcedure != null)
-                nowProcedure.OnUpdate(Time.deltaTime, Time.fixedDeltaTime);
+            if (NowProcedure != null)
+                NowProcedure.OnUpdate(Time.deltaTime, Time.fixedDeltaTime);
         }
         private void FixedUpdate() {
-            if (nowProcedure != null)
-                nowProcedure.OnFixedUpdate();
+            if (NowProcedure != null)
+                NowProcedure.OnFixedUpdate();
         }
 
         public void Exit() {
-            if (nowProcedure != null) {
-                nowProcedure.OnLeave(true);
-                nowProcedure = null;
+            if (NowProcedure != null) {
+                NowProcedure.OnLeave(true);
+                NowProcedure = null;
             }
-            procedureDict.ForEach(p => p.Value.OnDestroy());
-            procedureDict.Clear();
+            ProcedureDict.ForEach(p => p.Value.OnDestroy());
+            ProcedureDict.Clear();
         }
     }
 }

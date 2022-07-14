@@ -7,6 +7,12 @@ namespace MycroftToolkit.QuickCode {
          public const BindingFlags InstanceBinding = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public; 
          public const BindingFlags StaticBinding = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
+         public static T CreateInstance<T>(string fullName,string assemblyName = default, object[] parameters = null) {
+             assemblyName ??= Assembly.GetExecutingAssembly().GetName().CodeBase;
+             Type objectType = QuickReflect.FindType(fullName, assemblyName);
+             object obj = parameters == null ? Activator.CreateInstance(objectType) : Activator.CreateInstance(objectType, parameters);
+             return (T)obj;
+         }
          public static Type FindType(string fullName,string assemblyName = default) {
              assemblyName ??= Assembly.GetExecutingAssembly().GetName().CodeBase;
              Assembly targetAssembly = Assembly.Load(assemblyName);
