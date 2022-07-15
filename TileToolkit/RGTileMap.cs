@@ -1,14 +1,16 @@
 using System.Collections.Generic;
+using MycroftToolkit.DiscreteGridToolkit;
+using MycroftToolkit.MathTool;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 namespace MapSystem {
     public class RGTileData {
         public Vector2Int pos;
-        public IRGTile tile;
+        public ITile tile;
         public RectInt rect;
         public Vector2Int spaceSize;
-        public RGTileData(Vector2Int pos, IRGTile tile) {
+        public RGTileData(Vector2Int pos, ITile tile) {
             this.pos = pos;
             this.tile = tile;
             rect = new RectInt(pos, tile.Size);
@@ -44,7 +46,7 @@ namespace MapSystem {
             return true;
         }
 
-        public RGTileData SetTile(Vector2Int pos, IRGTile tile, bool isCover = true) {
+        public RGTileData SetTile(Vector2Int pos, ITile tile, bool isCover = true) {
             if (!isCover) {
                 RemoveTiles(pos, pos + tile.Size - Vector2Int.one);
             }
@@ -58,11 +60,11 @@ namespace MapSystem {
             }
             return td;
         }
-        public IRGTile GetTile(Vector2Int pos) {
+        public ITile GetTile(Vector2Int pos) {
             if (logicMap[pos.x, pos.y] == null) return null;
             return logicMap[pos.x, pos.y].tile;
         }
-        public T GetTile<T>(Vector2Int pos) where T : IRGTile {
+        public T GetTile<T>(Vector2Int pos) where T : ITile {
             if (logicMap[pos.x, pos.y] == null) return default;
             if (logicMap[pos.x, pos.y].tile is T) return (T)logicMap[pos.x, pos.y].tile;
             return default;
@@ -70,7 +72,7 @@ namespace MapSystem {
         public RGTileData GetTileData(Vector2Int pos)
             => logicMap[pos.x, pos.y];
 
-        public void FillTile(Vector2Int start, Vector2Int end, IRGTile tile, Vector2Int spacing, bool isCover = false) {
+        public void FillTile(Vector2Int start, Vector2Int end, ITile tile, Vector2Int spacing, bool isCover = false) {
             int x, y = start.y;
             while (y <= end.y - tile.Size.y + 1) {
                 x = start.x;
@@ -86,7 +88,7 @@ namespace MapSystem {
                 y += tile.Size.y + spacing.y;
             }
         }
-        public void FillRingTile(Vector2Int start, Vector2Int end, Dictionary<int, RGTile> tiles, int width) {
+        public void FillRingTile(Vector2Int start, Vector2Int end, Dictionary<int, Tile> tiles, int width) {
             SetTile(start, tiles[1]);
             SetTile(new Vector2Int(end.x, start.y), tiles[3]);
             SetTile(new Vector2Int(start.x, end.y), tiles[7]);
@@ -101,7 +103,7 @@ namespace MapSystem {
                 SetTile(new Vector2Int(end.x, y), tiles[6]);
             }
         }
-        public void FillDifferentSizesTile(Vector2Int start, Vector2Int end, Dictionary<Vector2Int, RGTile_Random> tiles, RGRandom random) {
+        public void FillDifferentSizesTile(Vector2Int start, Vector2Int end, Dictionary<Vector2Int, TileRandom> tiles, QuickRandom random) {
             int x;
             for (int y = start.y; y < end.y; y++) {
                 x = start.x;
@@ -126,10 +128,10 @@ namespace MapSystem {
                 }
             }
         }
-        public void FillDifferentSizesTile_BigFirst(Vector2Int start, Vector2Int end, Dictionary<Vector2Int, RGTile_Random> tiles) {
-            int x;
-            for (int y = start.y; y < end.y; y++) {
-                x = start.x;
+        public void FillDifferentSizesTile_BigFirst(Vector2Int start, Vector2Int end, Dictionary<Vector2Int, TileRandom> tiles) {
+            for (int y = start.y; y < end.y; y++)
+            {
+                int x = start.x;
                 while (x < end.x) {
                     if (!IsSafe(x, y)) {
                         x = logicMap[x, y].pos.x + logicMap[x, y].tile.Size.x;
@@ -155,8 +157,8 @@ namespace MapSystem {
             Vector2Int size = GetTileData(pos).tile.Size;
             for (int x = start.x; x < (start + size).x; x++) {
                 for (int y = start.y; y < (start + size).y; y++) {
-                    if (tilemap.HasTile(pos.Vec3Int()))
-                        tilemap.SetTile(pos.Vec3Int(), null);
+                    if (tilemap.HasTile(pos.ToVec3Int()))
+                        tilemap.SetTile(pos.ToVec3Int(), null);
                     if (IsInMap(pos))
                         logicMap[x, y] = null;
                 }
@@ -173,14 +175,14 @@ namespace MapSystem {
         
         #region GO专用
         public void SetTileSprite(Vector2Int pos, Sprite sprite, bool isFlip = false) {
-            RGTile_GO tile = logicMap[pos.x, pos.y].tile as RGTile_GO;
+            TileGo tile = logicMap[pos.x, pos.y].tile as TileGo;
             if (tile == null) return;
             tile.go.GetComponent<SpriteRenderer>().sprite = sprite;
             if (isFlip) tile.go.GetComponent<SpriteRenderer>().flipX = true;
         }
         
         public void SetTileSpriteLayer(Vector2Int pos, string layerName, int layerID) {
-            RGTile_GO tile = logicMap[pos.x, pos.y].tile as RGTile_GO;
+            TileGo tile = logicMap[pos.x, pos.y].tile as TileGo;
             if (tile == null) return;
             SpriteRenderer sr = tile.go.GetComponent<SpriteRenderer>();
             sr.sortingLayerName = layerName;
@@ -189,9 +191,9 @@ namespace MapSystem {
         
         public enum EPivot { Top, Bottom, Left, Right, Center, BottomLeft, BottomRight, TopRight, TopLeft }
         
-        public void SetTile_Pivot(Vector2Int pos, RGTile_GO tile, EPivot pivot) {
+        public void SetTile_Pivot(Vector2Int pos, TileGo tile, EPivot pivot) {
             RGTileData td = SetTile(pos, tile);
-            Transform target = (td.tile as RGTile_GO)?.go.transform;
+            Transform target = (td.tile as TileGo)?.go.transform;
             if (!target) return;
             switch (pivot) {
                 case EPivot.Top:
