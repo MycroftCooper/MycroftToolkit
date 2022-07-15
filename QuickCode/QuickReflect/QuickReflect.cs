@@ -8,7 +8,7 @@ namespace MycroftToolkit.QuickCode {
          public const BindingFlags InstanceBinding = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public; 
          public const BindingFlags StaticBinding = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
-         public static T CreateInstance<T>(string fullName, object[] parameters = null) {
+         public static T CreateInstance<T>(string fullName,params object[] parameters) {
              if (String.IsNullOrEmpty(fullName)) {
                  Debug.LogError($"QuickReflect>Error>类名称非法!");
                  return default;
@@ -31,7 +31,7 @@ namespace MycroftToolkit.QuickCode {
              }
          }
          
-         public static T CreateInstance<T>(string fullName,AssemblyName assemblyName, object[] parameters = null) {
+         public static T CreateInstance<T>(string fullName,AssemblyName assemblyName, params object[] parameters) {
              if (String.IsNullOrEmpty(fullName) || assemblyName == null) {
                  Debug.LogError($"QuickReflect>Error>类名称或程序集名称非法!");
                  return default;
