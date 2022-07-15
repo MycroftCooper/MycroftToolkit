@@ -4,16 +4,14 @@ using System.Reflection;
 namespace MycroftToolkit.QuickCode {
  public class ReflectObject {
         private readonly object _obj;
-        public string FullName { get; }
-        public string AssemblyName { get; }
         public Type ObjectType { get; }
 
-        public ReflectObject(string fullName,string assemblyName = default, object[] parameters = null) {
-            FullName = fullName;
-            assemblyName ??= Assembly.GetExecutingAssembly().GetName().CodeBase;
-            AssemblyName = assemblyName;
-            ObjectType = QuickReflect.FindType(fullName, AssemblyName);
-            _obj = parameters == null ? Activator.CreateInstance(ObjectType) : Activator.CreateInstance(ObjectType, parameters);
+        public ReflectObject(string fullName, object[] parameters = null) {
+            _obj = QuickReflect.CreateInstance<object>(fullName, parameters);
+        }
+        
+        public ReflectObject(string fullName,AssemblyName assemblyName, object[] parameters = null) {
+            _obj = QuickReflect.CreateInstance<object>(fullName,assemblyName, parameters);
         }
         
         public T GetObject<T>() => (T) _obj;

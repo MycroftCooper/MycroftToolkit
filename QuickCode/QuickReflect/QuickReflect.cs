@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using UnityEngine;
 
 namespace MycroftToolkit.QuickCode {
     public static class QuickReflect { 
@@ -7,19 +8,41 @@ namespace MycroftToolkit.QuickCode {
          public const BindingFlags InstanceBinding = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public; 
          public const BindingFlags StaticBinding = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
-         public static T CreateInstance<T>(string fullName,string assemblyName = default, object[] parameters = null) {
-             assemblyName ??= Assembly.GetExecutingAssembly().GetName().CodeBase;
-             Type objectType = QuickReflect.FindType(fullName, assemblyName);
+         public static T CreateInstance<T>(string fullName, object[] parameters = null) {
+             if (String.IsNullOrEmpty(fullName)) {
+                 Debug.LogError($"QuickReflect>Error>类名称非法!");
+                 return default;
+             }
+             
+             Type type = Type.GetType(fullName);
+             if (type == null) {
+                 Debug.LogError($"QuickReflect>Error>当前程序集下未找到:{fullName}");
+                 return default;
+             }
+
+             try {
+                 object obj = parameters == null ? 
+                     Activator.CreateInstance(type) : Activator.CreateInstance(type, parameters);
+                 return (T)obj;
+             }
+             catch (Exception ex){
+                 Debug.LogError($"QuickReflect>Error>构造函数参数异常:{ex.Message}:{fullName}");
+                 return default;
+             }
+         }
+         
+         public static T CreateInstance<T>(string fullName,AssemblyName assemblyName, object[] parameters = null) {
+             if (String.IsNullOrEmpty(fullName) || assemblyName == null) {
+                 Debug.LogError($"QuickReflect>Error>类名称或程序集名称非法!");
+                 return default;
+             }
+             Assembly targetAssembly = Assembly.Load(assemblyName);
+             Type objectType =  targetAssembly.GetType(fullName);
              object obj = parameters == null ? Activator.CreateInstance(objectType) : Activator.CreateInstance(objectType, parameters);
              return (T)obj;
          }
-         public static Type FindType(string fullName,string assemblyName = default) {
-             assemblyName ??= Assembly.GetExecutingAssembly().GetName().CodeBase;
-             Assembly targetAssembly = Assembly.Load(assemblyName);
-             return targetAssembly == null ? null : targetAssembly.GetType(fullName, false, true);
-         }
          
-        
+
         #region Fields
         public static bool HasField(this Type type, string fieldName) {
             return type.FindField(fieldName) != null;
