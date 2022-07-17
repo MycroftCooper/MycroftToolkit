@@ -40,6 +40,13 @@ namespace MycroftToolkit.MathTool {
         /// <returns>取整结果</returns>
         public static int RoundToInt(this float target) 
             =>(int) Math.Round(target, MidpointRounding.AwayFromZero);
+        
+        /// <summary>
+        /// 中式四舍五入(取整)
+        /// </summary>
+        /// <returns>取整结果</returns>
+        public static int RoundToInt(this double target) 
+            =>(int) Math.Round(target, MidpointRounding.AwayFromZero);
 
         /// <summary>
         /// 中式四舍五入(精确)
@@ -48,6 +55,15 @@ namespace MycroftToolkit.MathTool {
         /// <param name="dp">精确到几位小数</param>
         /// <returns>精确结果</returns>
         public static float Round(this float target, int dp) 
+            =>(float) Math.Round(target, dp, MidpointRounding.AwayFromZero);
+        
+        /// <summary>
+        /// 中式四舍五入(精确)
+        /// </summary>
+        /// <param name="target">精确目标</param>
+        /// <param name="dp">精确到几位小数</param>
+        /// <returns>精确结果</returns>
+        public static float Round(this double target, int dp) 
             =>(float) Math.Round(target, dp, MidpointRounding.AwayFromZero);
     }
 }
