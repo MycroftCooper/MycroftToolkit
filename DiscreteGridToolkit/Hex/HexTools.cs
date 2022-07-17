@@ -114,9 +114,9 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
             /// <param name="pos"></param>
             /// <returns></returns>
             public static Vector3Int Round(Vector3 pos) {
-                int q = Rounding.Round(pos.x);
-                int r = Rounding.Round(pos.y);
-                int s = Rounding.Round(pos.z);
+                int q = pos.x.RoundToInt();
+                int r = pos.y.RoundToInt();
+                int s = pos.z.RoundToInt();
 
                 float q_diff = Math.Abs(q - pos.x);
                 float r_diff = Math.Abs(r - pos.y);

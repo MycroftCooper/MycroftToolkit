@@ -1,87 +1,53 @@
 ﻿using System;
-using UnityEngine;
 
 namespace MycroftToolkit.MathTool {
     public static class Rounding {
+        // todo: 两个 RoundByMultiple 方法对负数支持不是很好，主要是因为没有分清楚取整模式
+        // 根据：https://docs.microsoft.com/zh-cn/dotnet/api/system.midpointrounding?view=net-6.0
+        // 可知取整模式应该有至少 AwayFromZero, ToNegativeInfinity， ToPositiveInfinity， ToZero 四种
+        // 后面再完善吧
+        
+        public enum RoundingMode {Up, Down, Close}
+        public static int RoundByMultiple(this int target, int precision = 1, RoundingMode mode = RoundingMode.Close) {
+            if (precision <= 0) throw new ArgumentOutOfRangeException(nameof(precision));
+            var output = mode switch {
+                RoundingMode.Up => target + (precision - target % precision),
+                RoundingMode.Down => target - target % precision,
+                RoundingMode.Close => target % precision >= precision / 2f
+                    ? target + precision - target % precision
+                    : target - target % precision,
+                _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+            };
+            return output;
+        }
+
+        public static float RoundByMultiple(this float target, float precision, RoundingMode mode = RoundingMode.Close) {
+            if (precision <= 0) throw new ArgumentOutOfRangeException(nameof(precision));
+            var output = mode switch {
+                RoundingMode.Up => target + (precision - target % precision),
+                RoundingMode.Down => target - target % precision,
+                RoundingMode.Close => target % precision >= precision / 2f
+                    ? target + precision - target % precision
+                    : target - target % precision,
+                _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+            };
+            return output;
+        }
+        
         /// <summary>
         /// 中式四舍五入(取整)
         /// </summary>
-        /// <param name="input">取整目标</param>
         /// <returns>取整结果</returns>
-        public static int Round(float input) {
-            int output = (int)input;
-            int t = (int)Mathf.Abs(input * 10 % 10);
-            if (t > 4) {
-                if (input > 0) output++;
-                if (input < 0) output--;
-            }
-            return output;
-        }
+        public static int RoundToInt(this float target) 
+            =>(int) Math.Round(target, MidpointRounding.AwayFromZero);
 
         /// <summary>
         /// 中式四舍五入(精确)
         /// </summary>
-        /// <param name="input">精确目标</param>
+        /// <param name="target">精确目标</param>
         /// <param name="dp">精确到几位小数</param>
         /// <returns>精确结果</returns>
-        public static float Round(float input, int dp) {
-            int p = (int)Math.Pow(10, (dp + 1));
-            int output = (int)(input * (p / 10));
-            int t = (int)Mathf.Abs(input * p % 10);
-            if (t > 4) {
-                if (input > 0) output++;
-                if (input < 0) output--;
-            }
-            return (float)output / (p / 10);
-        }
-
-        /// <summary>
-        /// 指定倍数向上取整
-        /// </summary>
-        /// <param name="input">取整目标</param>
-        /// <param name="multiple">取整倍数</param>
-        /// <returns>取整结果</returns>
-        public static int RoundMultiple_Up(int input, int multiple)
-            => input + multiple - input % multiple;
-        /// <summary>
-        /// 指定倍数向下取整
-        /// </summary>
-        /// <param name="input">取整目标</param>
-        /// <param name="multiple">取整倍数</param>
-        /// <returns>取整结果</returns>
-        public static int RoundMultiple_Down(int input, int multiple)
-            => input - input % multiple;
-        /// <summary>
-        /// 指定倍数接近取整
-        /// </summary>
-        /// <param name="input">取整目标</param>
-        /// <param name="multiple">取整倍数</param>
-        /// <returns>取整结果</returns>
-        public static int RoundMultiple(int input, int multiple)
-            => input % multiple >= (float)multiple / 2f ? input + multiple - input % multiple : input - input % multiple;
-        /// <summary>
-        /// 指定倍数向上取整
-        /// </summary>
-        /// <param name="input">取整目标</param>
-        /// <param name="multiple">取整倍数</param>
-        /// <returns>取整结果</returns>
-        public static float RoundMultiple_Up(float input, float multiple)
-            => input + multiple - input % multiple;
-        /// <summary>
-        /// 指定倍数向下取整
-        /// </summary>
-        /// <param name="input">取整目标</param>
-        /// <param name="multiple">取整倍数</param>
-        /// <returns>取整结果</returns>
-        public static float RoundMultiple_Down(float input, float multiple)
-            => input - input % multiple;
-        /// <summary>
-        /// 指定倍数接近取整
-        /// </summary>
-        /// <param name="input">取整目标</param>
-        /// <param name="multiple">取整倍数</param>
-        /// <returns>取整结果</returns>
-        public static float RoundMultiple(float input, float multiple)
-          => input % multiple >= (float)multiple / 2f ? input + multiple - input % multiple : input - input % multiple;
+        public static float Round(this float target, int dp) 
+            =>(float) Math.Round(target, dp, MidpointRounding.AwayFromZero);
     }
 }
