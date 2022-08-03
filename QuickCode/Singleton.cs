@@ -3,15 +3,13 @@ using UnityEngine.SceneManagement;
 
 namespace MycroftToolkit.QuickCode {
     public class Singleton<T> where T : Singleton<T>, new() {
-        private static T instance;
-        private static readonly object obj = new object();
+        private static T _instance;
+        private static readonly object Obj = new object();
         public static T Instance {
             get {
-                lock (obj) {
-                    if (instance == null) {
-                        instance = new T();
-                    }
-                    return instance;
+                lock (Obj)
+                {
+                    return _instance ??= new T();
                 }
             }
         }
@@ -28,7 +26,7 @@ namespace MycroftToolkit.QuickCode {
         /// 是否为全局单例
         /// </summary>
         private static bool dontDestry = true;
-        protected static bool isGolbal {
+        protected static bool IsGlobal {
             get => dontDestry;
             set {
                 if (value == dontDestry || !Application.isPlaying) return;
@@ -57,33 +55,33 @@ namespace MycroftToolkit.QuickCode {
                 }
 
                 lock (_lock) {
-                    if (_instance == null) {
-                        // 先在场景中找寻
-                        _instance = (T)FindObjectOfType(typeof(T));
+                    if (_instance != null) return _instance;
+                    
+                    // 先在场景中找寻
+                    _instance = (T)FindObjectOfType(typeof(T));
 
-                        if (FindObjectsOfType(typeof(T)).Length > 1) {
-                            if (Debug.isDebugBuild) {
-                                Debug.LogWarning("[Singleton] " + typeof(T).Name + " should never be more than 1 in scene!");
-                            }
-
-                            return _instance;
+                    if (FindObjectsOfType(typeof(T)).Length > 1) {
+                        if (Debug.isDebugBuild) {
+                            Debug.LogWarning("[Singleton] " + typeof(T).Name + " should never be more than 1 in scene!");
                         }
 
-                        // 场景中找不到就创建新物体挂载
-                        if (_instance == null) {
-                            GameObject singletonObj = new GameObject();
-                            _instance = singletonObj.AddComponent<T>();
-                            singletonObj.name = "(singleton) " + typeof(T);
+                        return _instance;
+                    }
 
-                            if (isGolbal && Application.isPlaying) {
-                                DontDestroyOnLoad(singletonObj);
-                            }
+                    
+                    // 场景中找不到就创建新物体挂载
+                    if (_instance != null) return _instance;
+                    
+                    GameObject singletonObj = new GameObject();
+                    _instance = singletonObj.AddComponent<T>();
+                    singletonObj.name = "(singleton) " + typeof(T);
 
-                            return _instance;
-                        }
+                    if (IsGlobal && Application.isPlaying) {
+                        DontDestroyOnLoad(singletonObj);
                     }
 
                     return _instance;
+
                 }
             }
         }

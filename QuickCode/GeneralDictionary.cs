@@ -1,26 +1,24 @@
 ﻿using System.Collections.Generic;
 
 namespace  MycroftToolkit.QuickCode {
-    public class GeneralDictionary<Tkey> where Tkey : notnull {
-        public Dictionary<Tkey, object> _dict;
-        public int Count { get => _dict.Count; }
-        public GeneralDictionary() => _dict = new Dictionary<Tkey, object>();
-        public void Add(Tkey key, object value) => _dict.Add(key, value);
-        public Tvalue Get<Tvalue>(Tkey key) {
-            if (_dict.ContainsKey(key))
-                return (Tvalue)_dict[key];
+    public class GeneralDictionary<TKey> where TKey : notnull {
+        public Dictionary<TKey, object> Dict;
+        public int Count => Dict.Count;
+        public GeneralDictionary() => Dict = new Dictionary<TKey, object>();
+        public void Add(TKey key, object value) => Dict.Add(key, value);
+        public TValue Get<TValue>(TKey key) {
+            if (Dict.ContainsKey(key))
+                return (TValue)Dict[key];
             return default;
         }
-        public bool Set(Tkey key, object value) {
-            if (_dict.ContainsKey(key)) {
-                _dict[key] = value;
-                return true;
-            }
-            return false;
+        public bool Set(TKey key, object value) {
+            if (!Dict.ContainsKey(key)) return false;
+            Dict[key] = value;
+            return true;
         }
-        public bool ContainsKey(Tkey key) => _dict.ContainsKey(key);
-        public bool ContainsValue(object value) => _dict.ContainsValue(value);
-        public bool Remove(Tkey key) => _dict.Remove(key);
-        public void Clear() => _dict.Clear();
+        public bool ContainsKey(TKey key) => Dict.ContainsKey(key);
+        public bool ContainsValue(object value) => Dict.ContainsValue(value);
+        public bool Remove(TKey key) => Dict.Remove(key);
+        public void Clear() => Dict.Clear();
     }
 }

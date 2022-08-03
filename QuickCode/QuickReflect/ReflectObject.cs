@@ -6,12 +6,14 @@ namespace MycroftToolkit.QuickCode {
         private readonly object _obj;
         public Type ObjectType { get; }
 
-        public ReflectObject(string fullName,params object[] parameters) {
+        public ReflectObject(string fullName, params object[] parameters) {
             _obj = QuickReflect.CreateInstance<object>(fullName, parameters);
+            ObjectType = _obj.GetType();
         }
         
-        public ReflectObject(string fullName,AssemblyName assemblyName,params object[] parameters) {
+        public ReflectObject(string fullName,AssemblyName assemblyName, params object[] parameters) {
             _obj = QuickReflect.CreateInstance<object>(fullName,assemblyName, parameters);
+            ObjectType = _obj.GetType();
         }
         
         public T GetObject<T>() => (T) _obj;

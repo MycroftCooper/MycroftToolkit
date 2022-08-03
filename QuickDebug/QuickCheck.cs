@@ -29,16 +29,16 @@ public class PrefabChecker : EditorWindow {
 
             //获取所有的子节点;
             Transform[] transforms = prefab.GetComponentsInChildren<Transform>();
-            for (int j = 0; j < transforms.Length; j++) {
-                GameObject obj = transforms[j].gameObject;
+            foreach (var t in transforms) {
+                GameObject obj = t.gameObject;
                 var components = obj.GetComponents<Component>();
 
-                for (int k = 0; k < components.Length; k++) {
-                    if (components[k] == null) {
+                foreach (var t1 in components) {
+                    if (t1 == null) {
                         Debug.LogErrorFormat(obj, errorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", tmpAssetImport.assetPath, obj.name);
                         continue;
                     }
-                    CheckReference(components[k]);
+                    CheckReference(t1);
                 }
             }
         }
@@ -58,16 +58,16 @@ public class PrefabChecker : EditorWindow {
 
         //获取所有的子节点;
         Transform[] transforms = prefab.GetComponentsInChildren<Transform>();
-        for (int j = 0; j < transforms.Length; j++) {
-            GameObject obj = transforms[j].gameObject;
+        foreach (var t in transforms) {
+            GameObject obj = t.gameObject;
             var components = obj.GetComponents<Component>();
 
-            for (int k = 0; k < components.Length; k++) {
-                if (components[k] == null) {
+            foreach (var t1 in components) {
+                if (t1 == null) {
                     Debug.LogErrorFormat(obj, errorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", prefab.name, obj.name);
                     continue;
                 }
-                CheckReference(components[k]);
+                CheckReference(t1);
             }
         }
     }
@@ -92,16 +92,15 @@ public class PrefabChecker : EditorWindow {
         EditorUtility.DisplayProgressBar(errorInfo, "检查进度： " + ((int)(progressBar * 100)).ToString() + "%", progressBar);
     }
 
-    private static void CollectFiles(string directory, List<string> outfiles) {// 迭代获取文件路径
+    private static void CollectFiles(string directory, List<string> outFiles) {// 迭代获取文件路径
         string[] files = Directory.GetFiles(directory);
-        outfiles.AddRange(files);
+        outFiles.AddRange(files);
 
         string[] childDirectories = Directory.GetDirectories(directory);
-        if (childDirectories != null && childDirectories.Length > 0) {
-            for (int i = 0; i < childDirectories.Length; i++) {
-                string dir = childDirectories[i];
+        if (childDirectories.Length > 0) {
+            foreach (var dir in childDirectories) {
                 if (string.IsNullOrEmpty(dir)) continue;
-                CollectFiles(dir, outfiles);
+                CollectFiles(dir, outFiles);
             }
         }
     }

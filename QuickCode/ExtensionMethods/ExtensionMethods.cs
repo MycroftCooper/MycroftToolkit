@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 namespace MycroftToolkit.QuickCode {
     public static class ExtensionMethods {
-        public static void RemoveComponent<Component>(this GameObject obj, bool immediate = false) {
-            Component component = obj.GetComponent<Component>();
+        public static void RemoveComponent<TComponent>(this GameObject obj, bool immediate = false) {
+            TComponent component = obj.GetComponent<TComponent>();
             if (component != null) {
                 if (immediate) {
                     UnityEngine.Object.DestroyImmediate(component as UnityEngine.Object, true);
@@ -34,10 +34,11 @@ namespace MycroftToolkit.QuickCode {
             return parent;
         }
         public static T GetGetComponentInAllParents<T>(this GameObject go) where T:MonoBehaviour{
-            GameObject parent = go.transform.parent.gameObject;
+            Transform parent = go.transform.parent;
             while (parent != null ) {
                 T output = parent.GetComponent<T>();
                 if (output != null) return output;
+                parent = parent.parent;
             }
             return null;
         }
