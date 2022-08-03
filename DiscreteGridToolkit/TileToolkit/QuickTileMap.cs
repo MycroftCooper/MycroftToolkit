@@ -5,7 +5,7 @@ using MycroftToolkit.DiscreteGridToolkit;
 using MycroftToolkit.MathTool;
 using MycroftToolkit.QuickCode;
 
-namespace MapSystem {
+namespace MycroftToolkit.QuickTileToolkit {
     public class QuickTileData {
         public Vector2Int Pos;
         public IQuickTile QuickTile;

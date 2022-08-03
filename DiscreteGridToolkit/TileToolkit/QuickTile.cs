@@ -4,7 +4,7 @@ using UnityEngine.Tilemaps;
 using MycroftToolkit.DiscreteGridToolkit;
 using MycroftToolkit.MathTool;
 
-namespace MapSystem {
+namespace MycroftToolkit.QuickTileToolkit {
     public interface IQuickTile : IWeightObject {
         public string Name { get; }
         public Vector2Int Size { get; }
