@@ -11,7 +11,7 @@ using UnityEngine;
 
 #if UNITY_EDITOR
 public class TextureImportToolEditor : OdinEditorWindow {
-    [MenuItem("Assets/TextureImportTool/Editor")]
+    [MenuItem("Assets/QuickResource/TextureImportTool")]
     private static void Open() {
         GetWindow<TextureImportToolEditor>().Show();
         string[] paths = AssetDatabase.FindAssets("TextureImportToolEditor");
@@ -21,29 +21,29 @@ public class TextureImportToolEditor : OdinEditorWindow {
         _presetPath += "/Preset/";
     }
     
-    [HorizontalGroup("Split")]
-   
-    [VerticalGroup("Split/Left"), Title("检查器"), LabelWidth(200)] 
-    [AssetSelector(DisableListAddButtonBehaviour = false, ExpandAllMenuItems = true)]
+    [HorizontalGroup("Split",width:200)]
+    [VerticalGroup("Split/Left"), Title("检查器")] 
+    [AssetSelector(DisableListAddButtonBehaviour = true, ExpandAllMenuItems = true)]
     public List<Texture> targets;
     private void Update() {
         targets = new List<Texture>(Selection.GetFiltered<Texture2D>(SelectionMode.Assets));
     }
     
     
-    [VerticalGroup("Split/Right"), Title("编辑器"), LabelWidth(200)]
+    [VerticalGroup("Split/Right"), Title("编辑器"),PropertyOrder(1)]
     #region 预设管理相关
     [VerticalGroup("Split/Right"), LabelText("新预设名称")] 
     public string newPreSetName;
 
-    [VerticalGroup("Split/Right"), InfoBox("$debugInfo", InfoMessageType.Error), ShowIf("_showDebug", Value = true), ReadOnly]
+    [VerticalGroup("Split/Right"), InfoBox("$debugInfo", InfoMessageType.Error)]
+    [ShowIf("_showDebug", Value = true), ReadOnly ,PropertyOrder(2)]
     public string debugInfo;
     private bool _showDebug;
     private static string _presetPath;
     private static string _presetGuid;
 
 
-    [VerticalGroup("Split/Right"), Button("新建预设")]
+    [VerticalGroup("Split/Right"), Button("新建预设"),PropertyOrder(3)]
     private void NewPreset() {
         if (string.IsNullOrWhiteSpace(newPreSetName)) {
             debugInfo = "Error>新预设名称不合法!";
@@ -66,6 +66,7 @@ public class TextureImportToolEditor : OdinEditorWindow {
     
     
     [VerticalGroup("Split/Right"), AssetSelector(Paths = "/Preset/", Filter = "t:TextureImportPreSet"), InlineEditor]
+    [PropertyOrder(4)]
     public TextureImportPreSet preSet; 
     
     
