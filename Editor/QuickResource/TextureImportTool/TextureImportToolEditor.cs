@@ -20,16 +20,30 @@ public class TextureImportToolEditor : OdinEditorWindow {
         _presetPath = _presetPath.Substring(0,_presetPath.IndexOf("/TextureImportToolEditor", StringComparison.Ordinal));
         _presetPath += "/Preset/";
     }
+    
+    [HorizontalGroup("Split")]
+   
+    [VerticalGroup("Split/Left"), Title("检查器"), LabelWidth(200)] 
+    [AssetSelector(DisableListAddButtonBehaviour = false, ExpandAllMenuItems = true)]
+    public List<Texture> targets;
+    private void Update() {
+        targets = new List<Texture>(Selection.GetFiltered<Texture2D>(SelectionMode.Assets));
+    }
+    
+    
+    [VerticalGroup("Split/Right"), Title("编辑器"), LabelWidth(200)]
     #region 预设管理相关
+    [VerticalGroup("Split/Right"), LabelText("新预设名称")] 
+    public string newPreSetName;
+
+    [VerticalGroup("Split/Right"), InfoBox("$debugInfo", InfoMessageType.Error), ShowIf("_showDebug", Value = true), ReadOnly]
+    public string debugInfo;
+    private bool _showDebug;
     private static string _presetPath;
     private static string _presetGuid;
-    private bool _showDebug;
-    [InfoBox("$debugInfo", InfoMessageType.Error), ShowIfGroup("预设管理/_showDebug", Value = true), ReadOnly]
-    public string debugInfo;
 
-    [BoxGroup("预设管理"), LabelText("新预设名称")] 
-    public string newPreSetName;
-    [BoxGroup("预设管理"), Button("新建预设")]
+
+    [VerticalGroup("Split/Right"), Button("新建预设")]
     private void NewPreset() {
         if (string.IsNullOrWhiteSpace(newPreSetName)) {
             debugInfo = "Error>新预设名称不合法!";
@@ -51,7 +65,7 @@ public class TextureImportToolEditor : OdinEditorWindow {
     #endregion
     
     
-    [AssetSelector(Paths = "/Preset/", Filter = "t:TextureImportPreSet"), InlineEditor]
+    [VerticalGroup("Split/Right"), AssetSelector(Paths = "/Preset/", Filter = "t:TextureImportPreSet"), InlineEditor]
     public TextureImportPreSet preSet; 
     
     
