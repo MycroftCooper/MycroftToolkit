@@ -5,19 +5,29 @@ using Sirenix.OdinInspector;
 using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 #if UNITY_EDITOR
 public class TextureProcessingToolEditor : OdinEditorWindow {
     [MenuItem("Assets/QuickResource/Texture/ProcessingTool")]
     public static void CreateWindow() {
-        GetWindow<TextureProcessingToolEditor>("贴图处理工具").Show();
+        EditorWindow window = GetWindow<TextureProcessingToolEditor>("贴图处理工具");
+        window.minSize = new Vector2(600, 400);
+        window.Focus();
+        window.Show();
     }
+    
 
     #region 图片描边相关
-    [AssetSelector, TabGroup("图片描边")]
+    [AssetSelector, TabGroup("图片描边"), LabelText("目标图片")]
     public Sprite targetSprite;
-    [TabGroup("图片描边")]
+    [TabGroup("图片描边"), LabelText("描边颜色")]
     public Color outlineColor;
+    [TabGroup("图片描边"), Range(1,64), LabelText("描边大小")]
+    public int outlineSize;
+    
+    [TabGroup("图片描边"), LabelText("结果预览"), PreviewField(128, ObjectFieldAlignment.Center), ReadOnly]
+    public Sprite resultPreview;
     
     [TabGroup("图片描边"), Button("生成描边图", ButtonSizes.Medium)]
     public void GenerateOutlinePicture() {
@@ -59,6 +69,7 @@ public class TextureProcessingToolEditor : OdinEditorWindow {
         AssetDatabase.Refresh();
         Debug.Log($"描边图保存在 ‘{newPath}’", AssetDatabase.LoadAssetAtPath<Texture2D>(newPath));
     }
+    
     #endregion
 
     
@@ -81,27 +92,27 @@ public class TextureProcessingToolEditor : OdinEditorWindow {
         return readableText;
     }
 
-    [ShowInInspector, TabGroup("图片拼接"), LabelText("需要生成的sprite"), NonSerialized, HideReferenceObjectPicker]
-    public List<Sprite> CombinationSprites = new List<Sprite>();
+    [AssetSelector, TabGroup("图片拼接"), LabelText("需要生成的sprite"), HideReferenceObjectPicker]
+    public List<Sprite> combinationSprites = new List<Sprite>();
     [TabGroup("图片拼接"), Button("合并为新图集", ButtonSizes.Medium)]
     public void GenerateCombinedTexture() {
-        if (CombinationSprites.Count == 0) {
+        if (combinationSprites.Count == 0) {
             return;
         }
-        var textures = new Texture2D[CombinationSprites.Count];
+        var textures = new Texture2D[combinationSprites.Count];
         var maxHeight = float.MinValue;
         var wholeWidth = 0f;
-        for (var i = 0; i < CombinationSprites.Count; i++) {
-            textures[i] = DuplicateTexture(CombinationSprites[i].texture);
-            if (CombinationSprites[i].rect.height > maxHeight) {
-                maxHeight = CombinationSprites[i].rect.height;
+        for (var i = 0; i < combinationSprites.Count; i++) {
+            textures[i] = DuplicateTexture(combinationSprites[i].texture);
+            if (combinationSprites[i].rect.height > maxHeight) {
+                maxHeight = combinationSprites[i].rect.height;
             }
-            wholeWidth += CombinationSprites[i].rect.width;
+            wholeWidth += combinationSprites[i].rect.width;
         }
         var targetTex = new Texture2D((int) wholeWidth, (int) maxHeight);
         var currentX = 0;
         for (var i = 0; i < textures.Length; i++) {
-            var currentSpriteRect = CombinationSprites[i].rect;
+            var currentSpriteRect = combinationSprites[i].rect;
             var pixels = textures[i].GetPixels((int)currentSpriteRect.x, (int)currentSpriteRect.y,
                 (int)currentSpriteRect.width, (int)currentSpriteRect.height);
             targetTex.SetPixels(currentX, 0, (int)currentSpriteRect.width, (int)currentSpriteRect.height, pixels);

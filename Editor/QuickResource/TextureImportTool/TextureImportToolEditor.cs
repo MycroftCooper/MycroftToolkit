@@ -13,7 +13,11 @@ using UnityEngine;
 public class TextureImportToolEditor : OdinEditorWindow {
     [MenuItem("Assets/QuickResource/Texture/ImportTool")]
     private static void Open() {
-        GetWindow<TextureImportToolEditor>("贴图导入工具").Show();
+        EditorWindow window = GetWindow<TextureImportToolEditor>("贴图导入工具");
+        window.minSize = new Vector2(800, 500);
+        window.Focus();
+        window.Show();
+        
         string[] paths = AssetDatabase.FindAssets("TextureImportToolEditor");
         _presetGuid = paths[0];
         _presetPath = AssetDatabase.GUIDToAssetPath(_presetGuid);
@@ -23,10 +27,13 @@ public class TextureImportToolEditor : OdinEditorWindow {
     
     [HorizontalGroup("Split",width:200)]
     [VerticalGroup("Split/Left"), Title("检查器")] 
-    [AssetSelector(DisableListAddButtonBehaviour = true, ExpandAllMenuItems = true)]
-    public List<Texture> targets;
+    [AssetSelector, HideReferenceObjectPicker]
+    public List<Texture2D> targets= new List<Texture2D>();
     private void Update() {
-        targets = new List<Texture>(Selection.GetFiltered<Texture2D>(SelectionMode.Assets));
+        var array = Selection.GetFiltered<Texture2D>(SelectionMode.Assets);
+        if (array.Length == 0) return;
+        targets.Clear();
+        targets.AddRange(array);
     }
     
     
@@ -38,7 +45,9 @@ public class TextureImportToolEditor : OdinEditorWindow {
     [VerticalGroup("Split/Right"), InfoBox("$debugInfo", InfoMessageType.Error)]
     [ShowIf("_showDebug", Value = true), ReadOnly ,PropertyOrder(2)]
     public string debugInfo;
+#pragma warning disable CS0414
     private bool _showDebug;
+#pragma warning restore CS0414
     private static string _presetPath;
     private static string _presetGuid;
 
@@ -73,7 +82,7 @@ public class TextureImportToolEditor : OdinEditorWindow {
     #region 批处理相关
     [Button("开始批处理")]
     private void StartBatchProcessing() {
-        Texture2D[] textures = Selection.GetFiltered<Texture2D>(SelectionMode.Assets);
+        List<Texture2D> textures = targets;
         foreach (Texture2D texture in textures) {
             string path = AssetDatabase.GetAssetPath(texture);
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
