@@ -11,9 +11,9 @@ using UnityEngine;
 
 #if UNITY_EDITOR
 public class TextureImportToolEditor : OdinEditorWindow {
-    [MenuItem("Assets/QuickResource/TextureImportTool")]
+    [MenuItem("Assets/QuickResource/Texture/ImportTool")]
     private static void Open() {
-        GetWindow<TextureImportToolEditor>().Show();
+        GetWindow<TextureImportToolEditor>("贴图导入工具").Show();
         string[] paths = AssetDatabase.FindAssets("TextureImportToolEditor");
         _presetGuid = paths[0];
         _presetPath = AssetDatabase.GUIDToAssetPath(_presetGuid);
