@@ -41,16 +41,13 @@ namespace MycroftToolkit.QuickCode {
         // 摘要:
         //     Ex: "thisIsCamelCase" -> "This Is Camel Case"
         public static string SplitPascalCase(this string input) {
-            if (input == null || input.Length == 0) {
+            if (string.IsNullOrEmpty(input)) {
                 return input;
             }
 
             StringBuilder stringBuilder = new StringBuilder(input.Length);
-            if (char.IsLetter(input[0])) {
-                stringBuilder.Append(char.ToUpper(input[0]));
-            } else {
-                stringBuilder.Append(input[0]);
-            }
+            stringBuilder.Append(char.IsLetter(input[0]) ? 
+                char.ToUpper(input[0]) : input[0]);
 
             for (int i = 1; i < input.Length; i++) {
                 char c = input[i];

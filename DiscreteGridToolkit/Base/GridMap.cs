@@ -3,12 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace MycroftToolkit.DiscreteGridToolkit {
     public class GridMapObjectInfo<T> {
-        public IGridMap map { get; }
+        public IGridMap Map { get; }
         public RectInt PositionInfo { get; }
-        public T obj;
+        public T Obj;
+
+        public GridMapObjectInfo(IGridMap map, RectInt positionInfo)
+        {
+            this.Map = map;
+            PositionInfo = positionInfo;
+        }
     }
     public interface IGridMap {
-        public Vector3 originWorldPos { get; set; }
+        public Vector3 OriginWorldPos { get; set; }
         public Vector2 CellSize { get; set; }
         public Vector2 CellSpacing { get; set; }
         public bool IsInMap(Vector2Int logicPos);

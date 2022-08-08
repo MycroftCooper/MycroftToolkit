@@ -5,7 +5,8 @@ using System.Collections.Generic;
 
 #if UNITY_EDITOR
 public class PrefabChecker : EditorWindow {
-    private static string errorInfo = "QuickDebug>PrefabChecker>";
+    private const string ErrorInfo = "QuickDebug>PrefabChecker>";
+
     [MenuItem("QuickDebug/检查预制体")]
     private static void CheckPrefab_All() {
         List<string> listString = new List<string>();
@@ -21,7 +22,7 @@ public class PrefabChecker : EditorWindow {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(tmpAssetImport.assetPath);
 
             if (prefab == null) {
-                Debug.LogError(errorInfo + "空的预设 ： " + tmpAssetImport.assetPath);
+                Debug.LogError(ErrorInfo + "空的预设 ： " + tmpAssetImport.assetPath);
                 continue;
             }
 
@@ -35,7 +36,7 @@ public class PrefabChecker : EditorWindow {
 
                 foreach (var t1 in components) {
                     if (t1 == null) {
-                        Debug.LogErrorFormat(obj, errorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", tmpAssetImport.assetPath, obj.name);
+                        Debug.LogErrorFormat(obj, ErrorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", tmpAssetImport.assetPath, obj.name);
                         continue;
                     }
                     CheckReference(t1);
@@ -43,14 +44,14 @@ public class PrefabChecker : EditorWindow {
             }
         }
         EditorUtility.ClearProgressBar();
-        Debug.Log(errorInfo + "检查完毕!");
+        Debug.Log(ErrorInfo + "检查完毕!");
     }
 
     [MenuItem("Assets/检查预制体", false, 38)]
     private static void CheckPrefab_Select() {
         GameObject prefab = Selection.activeObject as GameObject;
         if (!prefab) {
-            Debug.LogErrorFormat(prefab, errorInfo + "被检查物体不是预制体!");
+            Debug.LogErrorFormat(prefab, ErrorInfo + "被检查物体不是预制体!");
             return;
         }
 
@@ -64,7 +65,7 @@ public class PrefabChecker : EditorWindow {
 
             foreach (var t1 in components) {
                 if (t1 == null) {
-                    Debug.LogErrorFormat(obj, errorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", prefab.name, obj.name);
+                    Debug.LogErrorFormat(obj, ErrorInfo + "预制体组件丢失! 路径：{0}  对象: {1}", prefab.name, obj.name);
                     continue;
                 }
                 CheckReference(t1);
@@ -73,7 +74,7 @@ public class PrefabChecker : EditorWindow {
     }
     private static void CheckActive(GameObject go) {// 检查是否激活
         if (!go.activeSelf) {
-            Debug.LogFormat(go, errorInfo + "未激活: {0}", AssetDatabase.GetAssetPath(go));
+            Debug.LogFormat(go, ErrorInfo + "未激活: {0}", AssetDatabase.GetAssetPath(go));
         }
     }
 
@@ -82,14 +83,14 @@ public class PrefabChecker : EditorWindow {
         while (iterator.NextVisible(true)) {
             if (iterator.propertyType == SerializedPropertyType.ObjectReference) {
                 if (iterator.objectReferenceValue == null) {
-                    Debug.LogWarningFormat(component.gameObject, errorInfo + "引用为空! 引用名: {0}  引用类型: {1}   路径: {2}", iterator.name, component.GetType().Name, AssetDatabase.GetAssetPath(component.gameObject));
+                    Debug.LogWarningFormat(component.gameObject, ErrorInfo + "引用为空! 引用名: {0}  引用类型: {1}   路径: {2}", iterator.name, component.GetType().Name, AssetDatabase.GetAssetPath(component.gameObject));
                 }
             }
         }
     }
 
     private static void UpdateProgressBar(float progressBar) {// 更新进度条
-        EditorUtility.DisplayProgressBar(errorInfo, "检查进度： " + ((int)(progressBar * 100)).ToString() + "%", progressBar);
+        EditorUtility.DisplayProgressBar(ErrorInfo, "检查进度： " + ((int)(progressBar * 100)).ToString() + "%", progressBar);
     }
 
     private static void CollectFiles(string directory, List<string> outFiles) {// 迭代获取文件路径

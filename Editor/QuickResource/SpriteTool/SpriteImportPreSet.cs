@@ -2,8 +2,8 @@ using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
 
-namespace MycroftToolkit.QuickResource.TextureImportTool {
-    public class TextureImportPreSet:ScriptableObject {
+namespace MycroftToolkit.QuickResource.SpriteImportTool {
+    public class SpriteImportPreSet:ScriptableObject {
         [BoxGroup("Sprite导入设置"), Title("模式")]
         [BoxGroup("Sprite导入设置"), LabelText("Sprite模式"), EnumPaging] 
         public SpriteImportMode  importMode;

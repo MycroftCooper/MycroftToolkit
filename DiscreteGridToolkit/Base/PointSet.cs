@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
 namespace MycroftToolkit.DiscreteGridToolkit {
-    public enum EPointSetType { any, line, rect, radius }
+    public enum EPointSetType { Any, Line, Rect, Radius }
+    
+    
     public class PointComparer : IComparer<Vector2Int> {
         public int Compare(Vector2Int x, Vector2Int y) {
             if (x == y) return 0;
@@ -16,63 +19,66 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             }
         }
     }
+    
+    
     public class PointSet {
-        internal SortedSet<Vector2Int> _points;
-        public EPointSetType type;
-        public int Count => _points.Count;
+        internal SortedSet<Vector2Int> Points;
+        public EPointSetType Type;
+        public int Count => Points.Count;
 
-        public Vector2Int min => _points.Min();
-        public Vector2Int max => _points.Max();
+        public Vector2Int Min => Points.Min();
+        public Vector2Int Max => Points.Max();
 
-        public PointSet(EPointSetType type = EPointSetType.any) {
-            this.type = type;
-            this._points = new SortedSet<Vector2Int>(new PointComparer());
+        // ReSharper disable once MemberCanBeProtected.Global
+        public PointSet(EPointSetType type = EPointSetType.Any) {
+            Type = type;
+            Points = new SortedSet<Vector2Int>(new PointComparer());
         }
-        public PointSet(List<Vector2Int> points, EPointSetType type = EPointSetType.any) {
-            this.type = type;
-            this._points = new SortedSet<Vector2Int>(new PointComparer());
+        public PointSet(List<Vector2Int> points, EPointSetType type = EPointSetType.Any) {
+            Type = type;
+            Points = new SortedSet<Vector2Int>(new PointComparer());
             foreach (var point in points) {
-                this._points.Add(point);
+                Points.Add(point);
             }
         }
-        public PointSet(SortedSet<Vector2Int> points, EPointSetType type = EPointSetType.any) {
-            this.type = type;
-            this._points = new SortedSet<Vector2Int>(points, new PointComparer());
+        public PointSet(SortedSet<Vector2Int> points, EPointSetType type = EPointSetType.Any) {
+            Type = type;
+            Points = new SortedSet<Vector2Int>(points, new PointComparer());
         }
         public PointSet(Vector2Int centerPos, List<Vector2Int> template) {
-            type = EPointSetType.any;
-            _points = new SortedSet<Vector2Int>();
+            Type = EPointSetType.Any;
+            Points = new SortedSet<Vector2Int>();
             foreach (Vector2Int pos in template) {
                 Vector2Int p = centerPos + pos;
-                _points.Add(p);
+                Points.Add(p);
             }
         }
 
-        protected virtual void updatePointSet() { }
+        protected virtual void UpdatePointSet() { }
 
-        public void HasPoint(Vector2Int point)
-            => _points.Contains(point);
+        public bool HasPoint(Vector2Int point)
+            => Points.Contains(point);
         public void ForEach(Action<Vector2Int> action) {
-            foreach (var point in _points) {
+            foreach (var point in Points) {
                 action?.Invoke(point);
             }
         }
-        public PointSet Copy() => new PointSet(_points, type);
+        public PointSet Copy() => new PointSet(Points, Type);
         public bool AddPoint(Vector2Int point)
-            => !_points.Add(point);
+            => !Points.Add(point);
         public bool AddPoints(List<Vector2Int> points) {
             bool hasPoint = false;
             points.ForEach(p => {
-                if (!_points.Add(p))
+                if (!Points.Add(p))
                     hasPoint = true;
             });
             return hasPoint;
         }
         public bool RemovePoint(Vector2Int point)
-            => _points.Remove(point);
+            => Points.Remove(point);
         public void RemovePoints(List<Vector2Int> point)
-            => point.ForEach(x => _points.Remove(x));
-        public void Clear() => _points.Clear();
+            => point.ForEach(x => Points.Remove(x));
+        public void Clear() => Points.Clear();
 
 
         #region 集合运算
@@ -80,15 +86,15 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// 取两点集交集
         /// </summary>
         public PointSet Intersect(PointSet pointSet) {
-            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)_points.Intersect<Vector2Int>(pointSet._points);
+            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)Points.Intersect(pointSet.Points);
             return new PointSet(newPoints);
         }
         /// <summary>
         /// 两点集是否有交集
         /// </summary>
         public bool IsIntersect(PointSet pointSet) {
-            foreach (var point in pointSet._points) {
-                if (_points.Contains(point)) return true;
+            foreach (var point in pointSet.Points) {
+                if (Points.Contains(point)) return true;
             }
             return false;
         }
@@ -96,7 +102,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// 取两点集并集
         /// </summary>
         public static PointSet operator +(PointSet pointSet1, PointSet pointSet2) {
-            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1._points.Union<Vector2Int>(pointSet2._points);
+            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1.Points.Union(pointSet2.Points);
             return new PointSet(newPoints);
         }
 
@@ -104,54 +110,54 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// 取两点集差集
         /// </summary>
         public static PointSet operator -(PointSet pointSet1, PointSet pointSet2) {
-            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1._points.Except<Vector2Int>(pointSet2._points);
+            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1.Points.Except(pointSet2.Points);
             return new PointSet(newPoints);
         }
         /// <summary>
         /// 是否为指定集合的真子集
         /// </summary>
         public bool IsProperSubsetOf(PointSet pointSet)
-           => _points.IsProperSubsetOf(pointSet._points);
+           => Points.IsProperSubsetOf(pointSet.Points);
         /// <summary>
         /// 是否为指定集合的真超集
         /// </summary>
         public bool IsProperSupersetOf(PointSet pointSet)
-            => _points.IsProperSupersetOf(pointSet._points);
+            => Points.IsProperSupersetOf(pointSet.Points);
         /// <summary>
         /// 是否为指定集合的子集
         /// </summary>
         public bool IsSubsetOf(PointSet pointSet)
-            => _points.IsSubsetOf(pointSet._points);
+            => Points.IsSubsetOf(pointSet.Points);
         /// <summary>
         /// 是否为指定集合的超集
         /// </summary>
         public bool IsSupersetOf(PointSet pointSet)
-             => _points.IsSupersetOf(pointSet._points);
+             => Points.IsSupersetOf(pointSet.Points);
         #endregion
 
         public void Move(Vector2Int offset) {
             SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>();
-            foreach (var i in _points) {
+            foreach (var i in Points) {
                 newPS.Add(i + offset);
             }
-            _points.Clear();
-            _points = newPS;
+            Points.Clear();
+            Points = newPS;
         }
         public void Flip_X() {
             SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>();
-            foreach (var i in _points) {
+            foreach (var i in Points) {
                 newPS.Add(new Vector2Int(i.x, -i.y));
             }
-            _points.Clear();
-            _points = newPS;
+            Points.Clear();
+            Points = newPS;
         }
         public void Flip_Y() {
             SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>();
-            foreach (var i in _points) {
+            foreach (var i in Points) {
                 newPS.Add(new Vector2Int(-i.x, i.y));
             }
-            _points.Clear();
-            _points = newPS;
+            Points.Clear();
+            Points = newPS;
         }
     }
 }
