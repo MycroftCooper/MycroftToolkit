@@ -10,12 +10,12 @@ using UnityEngine;
 
 namespace MycroftToolkit.QuickResource.SpriteImportTool {
 #if UNITY_EDITOR
-    public class TextureImportToolEditor : OdinEditorWindow
+    public class SpriteImportToolEditor : OdinEditorWindow
     {
         [MenuItem("Assets/QuickResource/Sprite/ImportTool")]
         private static void Open()
         {
-            EditorWindow window = GetWindow<TextureImportToolEditor>("贴图导入工具");
+            EditorWindow window = GetWindow<SpriteImportToolEditor>("贴图导入工具");
             window.minSize = new Vector2(800, 500);
             window.Focus();
             window.Show();
@@ -33,8 +33,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
         [AssetSelector, HideReferenceObjectPicker]
         public List<Texture2D> targets = new List<Texture2D>();
 
-        private void Update()
-        {
+        private void Update() {
             var array = Selection.GetFiltered<Texture2D>(SelectionMode.Assets);
             if (array.Length == 0) return;
             targets.Clear();
