@@ -1,34 +1,34 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using MycroftToolkit.MathTool;
-using UnityEngine;
+
+// ReSharper disable MemberCanBeProtected.Global
+// ReSharper disable UnassignedField.Global
 
 namespace MycroftToolkit.QuickCode {
     public abstract class Ticker {
         /// <summary>
         /// 当前执行次数
         /// </summary>
-        public int nowExecuteTime;
+        public int NowExecuteTime;
+        
         /// <summary>
         /// 目标执行次数
         /// </summary>
-        public int targetExecuteTime;
+        public int TargetExecuteTime;
+        
         /// <summary>
         /// 剩余执行次数
         /// </summary>
-        public int remainingExecuteTime {
-            get => isLoop ? -1 : targetExecuteTime - nowExecuteTime;
-        }
-        public bool isPause { get; protected set; }
-        public bool isFinish { get; protected set; }
-        public bool isLoop;
+        public int RemainingExecuteTime => IsLoop ? -1 : TargetExecuteTime - NowExecuteTime;
 
-        public Action onTick;
-        public Action onPause;
-        public Action onResume;
-        public Action onCancel;
-        public Action onFinish;
+        public bool IsPause { get; protected set; }
+        public bool IsFinish { get; protected set; }
+        public bool IsLoop;
+
+        public Action OnTick;
+        public Action OnPause;
+        public Action OnResume;
+        public Action OnCancel;
+        public Action OnFinish;
 
         public abstract void Start();
         public abstract void DoTick();
@@ -40,7 +40,7 @@ namespace MycroftToolkit.QuickCode {
     /// <summary>
     /// 自动计数执行器
     /// </summary>
-    public class Ticker_Auto : Ticker {
+    public class TickerAuto : Ticker {
         private float _interval;
         /// <summary>
         /// 执行间隔
@@ -59,23 +59,21 @@ namespace MycroftToolkit.QuickCode {
         /// <summary>
         /// 当前计数
         /// </summary>
-        public float nowTicks {
-            get => _timer == null ? -1 : _timer.GetTimeElapsed() + nowExecuteTime * Interval;
-        }
+        public float NowTicks => _timer == null ? -1 : _timer.GetTimeElapsed() + NowExecuteTime * Interval;
+
         /// <summary>
         /// 目标计数
         /// </summary>
-        public float targetTicks {
-            get => isLoop ? -1 : targetExecuteTime * Interval;
-        }
+        public float TargetTicks => IsLoop ? -1 : TargetExecuteTime * Interval;
+
         /// <summary>
         /// 剩余计数
         /// </summary>
-        public float remainingTicks {
+        public float RemainingTicks {
             get {
-                if (_timer == null) return targetTicks;
-                if (isLoop) return -1;
-                return _timer.GetTimeRemaining() + remainingExecuteTime * Interval;
+                if (_timer == null) return TargetTicks;
+                if (IsLoop) return -1;
+                return _timer.GetTimeRemaining() + RemainingExecuteTime * Interval;
             }
         }
 
@@ -85,104 +83,95 @@ namespace MycroftToolkit.QuickCode {
         /// 循环自动计数执行器
         /// </summary>
         /// <param name="interval">执行间隔(秒)</param>
-        public Ticker_Auto(float interval) {
-            isLoop = true;
-            isPause = true;
-            isFinish = false;
+        public TickerAuto(float interval) {
+            IsLoop = true;
+            IsPause = true;
+            IsFinish = false;
             this.Interval = interval;
-            targetExecuteTime = -1;
+            TargetExecuteTime = -1;
         }
         /// <summary>
         /// 自动计数执行器
         /// </summary>
         /// <param name="targetExecuteTime">目标执行数(次数)</param>
         /// <param name="interval">执行间隔(秒)</param>
-        public Ticker_Auto(int targetExecuteTime, float interval) {
-            isLoop = false;
-            isPause = true;
-            isFinish = false;
+        public TickerAuto(int targetExecuteTime, float interval) {
+            IsLoop = false;
+            IsPause = true;
+            IsFinish = false;
             this.Interval = interval;
-            this.targetExecuteTime = targetExecuteTime;
+            this.TargetExecuteTime = targetExecuteTime;
         }
 
         public override void Start() {
-            isPause = false;
-            isFinish = false;
-            nowExecuteTime = 0;
+            IsPause = false;
+            IsFinish = false;
+            NowExecuteTime = 0;
 
             _timer = Timer.Register(Interval, DoTick);
             _timer.isLooped = true;
         }
 
         public override void DoTick() {
-            if (isPause || isFinish) return;
-            onTick?.Invoke();
-            nowExecuteTime++;
-            if (!isLoop && nowExecuteTime == targetExecuteTime) {
-                onFinish?.Invoke();
-                _timer.Cancel();
-                isPause = true;
-                isFinish = true;
-            }
+            if (IsPause || IsFinish) return;
+            OnTick?.Invoke();
+            NowExecuteTime++;
+            if (IsLoop || NowExecuteTime != TargetExecuteTime) return;
+            OnFinish?.Invoke();
+            _timer.Cancel();
+            IsPause = true;
+            IsFinish = true;
         }
 
         public override void Pause() {
-            if (isFinish || isPause) return;
-            isPause = true;
+            if (IsFinish || IsPause) return;
+            IsPause = true;
             _timer.Pause();
-            onPause?.Invoke();
+            OnPause?.Invoke();
         }
 
         public override void Resume() {
-            if (isFinish || !isPause) return;
-            isPause = false;
+            if (IsFinish || !IsPause) return;
+            IsPause = false;
             _timer.Resume();
-            onResume?.Invoke();
+            OnResume?.Invoke();
         }
 
         public override void Cancel() {
             _timer.Cancel();
-            isPause = true;
-            isFinish = true;
+            IsPause = true;
+            IsFinish = true;
         }
     }
 
     /// <summary>
     /// 手动计数执行器
     /// </summary>
-    public class Ticker_Manual : Ticker {
-        private int _interval;
+    public class TickerManual : Ticker {
         /// <summary>
         /// 执行间隔
         /// </summary>
-        public int Interval {
-            get => _interval;
-            set {
-                if (value == _interval) return;
-                _interval = value;
-            }
-        }
+        public int Interval { get; set; }
+
         private int _ticks;
 
         /// <summary>
         /// 当前计数
         /// </summary>
-        public int nowTime {
-            get => _ticks + nowExecuteTime * _interval;
-        }
+        public int NowTime => _ticks + NowExecuteTime * Interval;
+
         /// <summary>
         /// 目标计数
         /// </summary>
-        public float targetTime {
-            get => isLoop ? -1 : targetExecuteTime * _interval;
-        }
+        public float TargetTime => IsLoop ? -1 : TargetExecuteTime * Interval;
+
         /// <summary>
         /// 剩余计数
         /// </summary>
-        public float remainingTime {
+        public float RemainingTime {
             get {
-                if (isLoop) return -1;
-                return _ticks + remainingExecuteTime * _interval;
+                if (IsLoop) return -1;
+                return _ticks + RemainingExecuteTime * Interval;
             }
         }
 
@@ -190,12 +179,12 @@ namespace MycroftToolkit.QuickCode {
         /// 循环手动计数执行器
         /// </summary>
         /// <param name="interval">执行间隔(次数)</param>
-        public Ticker_Manual(int interval) {
-            isLoop = true;
-            isPause = true;
-            isFinish = false;
-            _interval = interval;
-            targetExecuteTime = -1;
+        public TickerManual(int interval) {
+            IsLoop = true;
+            IsPause = true;
+            IsFinish = false;
+            Interval = interval;
+            TargetExecuteTime = -1;
         }
 
         /// <summary>
@@ -203,46 +192,45 @@ namespace MycroftToolkit.QuickCode {
         /// </summary>
         /// <param name="targetExecuteTime">目标执行数(次数)</param>
         /// <param name="interval">执行间隔(次数)</param>
-        public Ticker_Manual(int targetExecuteTime, int interval) {
-            isLoop = false;
-            isPause = true;
-            isFinish = false;
-            _interval = interval;
-            this.targetExecuteTime = targetExecuteTime;
+        public TickerManual(int targetExecuteTime, int interval) {
+            IsLoop = false;
+            IsPause = true;
+            IsFinish = false;
+            Interval = interval;
+            this.TargetExecuteTime = targetExecuteTime;
         }
 
         public override void Start() {
-            isPause = false;
-            isFinish = false;
+            IsPause = false;
+            IsFinish = false;
             _ticks = 0;
-            nowExecuteTime = 0;
+            NowExecuteTime = 0;
         }
         public override void DoTick() {
-            if (isPause || isFinish) return;
+            if (IsPause || IsFinish) return;
             _ticks++;
-            if (_ticks != _interval) return;
-            onTick?.Invoke();
-            nowExecuteTime++;
+            if (_ticks != Interval) return;
+            OnTick?.Invoke();
+            NowExecuteTime++;
             _ticks = 0;
-            if (!isLoop && nowExecuteTime == targetExecuteTime) {
-                onFinish?.Invoke();
-                isPause = true;
-                isFinish = true;
-            }
+            if (IsLoop || NowExecuteTime != TargetExecuteTime) return;
+            OnFinish?.Invoke();
+            IsPause = true;
+            IsFinish = true;
         }
         public override void Pause() {
-            if (isFinish || isPause) return;
-            isPause = true;
-            onPause?.Invoke();
+            if (IsFinish || IsPause) return;
+            IsPause = true;
+            OnPause?.Invoke();
         }
         public override void Resume() {
-            if (isFinish || !isPause) return;
-            isPause = false;
-            onResume?.Invoke();
+            if (IsFinish || !IsPause) return;
+            IsPause = false;
+            OnResume?.Invoke();
         }
         public override void Cancel() {
-            isPause = true;
-            isFinish = true;
+            IsPause = true;
+            IsFinish = true;
         }
     }
 }
