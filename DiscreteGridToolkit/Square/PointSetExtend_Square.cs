@@ -2,6 +2,7 @@
 using System;
 
 namespace MycroftToolkit.DiscreteGridToolkit.Square {
+    public enum EDistanceType { D4, D8, Euler }
     public class PointSetLine : PointSet {
         private Vector2Int _startPos, _endPos;
         public Vector2Int StartPos {
@@ -100,7 +101,6 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
     }
 
     public class PointSetRadius : PointSet {
-        public enum ERadiusPointSetType { RadiusD4, RadiusD8, RadiusEuler }
         public int Radius {
             get => _radius;
             set {
@@ -110,7 +110,7 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
             }
         }
         
-        public ERadiusPointSetType RadiusType {
+        public EDistanceType RadiusType {
             get => _radiusType;
             set {
                 if (_radiusType == value) return;
@@ -129,10 +129,10 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
         }
 
         private int _radius;
-        private ERadiusPointSetType _radiusType;
+        private EDistanceType _radiusType;
         private Vector2Int _center;
 
-        public PointSetRadius(Vector2Int center, int radius, ERadiusPointSetType type) : base(EPointSetType.Radius) {
+        public PointSetRadius(Vector2Int center, int radius, EDistanceType type) : base(EPointSetType.Radius) {
             _center = center;
             _radius = radius;
             _radiusType = type;
@@ -152,7 +152,7 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
             }
 
             switch (_radiusType) {
-                case ERadiusPointSetType.RadiusEuler:
+                case EDistanceType.Euler:
                     for (int x = -_radius; x <= _radius; x++) {
                         for (int y = -_radius; y <= _radius; y++) {
                             Vector2Int p = new Vector2Int(Center.x + x, Center.y + y);
@@ -162,7 +162,7 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
                     }
                     break;
 
-                case ERadiusPointSetType.RadiusD4:
+                case EDistanceType.D4:
                     for (int x = -Radius; x <= Radius; x++) {
                         for (int y = -Radius; y <= Radius; y++) {
                             Vector2Int p = new Vector2Int(Center.x + x, Center.y + y);
@@ -172,7 +172,7 @@ namespace MycroftToolkit.DiscreteGridToolkit.Square {
                     }
                     break;
 
-                case ERadiusPointSetType.RadiusD8:
+                case EDistanceType.D8:
                     for (int x = -Radius; x <= Radius; x++) {
                         for (int y = -Radius; y <= Radius; y++) {
                             Vector2Int p = new Vector2Int(Center.x + x, Center.y + y);
