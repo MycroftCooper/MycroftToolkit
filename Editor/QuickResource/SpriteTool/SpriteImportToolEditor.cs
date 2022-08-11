@@ -20,11 +20,11 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             window.Focus();
             window.Show();
 
-            string[] paths = AssetDatabase.FindAssets("TextureImportToolEditor");
+            string[] paths = AssetDatabase.FindAssets("SpriteImportToolEditor");
             _presetGuid = paths[0];
             _presetPath = AssetDatabase.GUIDToAssetPath(_presetGuid);
             _presetPath = _presetPath.Substring(0,
-                _presetPath.IndexOf("/TextureImportToolEditor", StringComparison.Ordinal));
+                _presetPath.IndexOf("/SpriteImportToolEditor", StringComparison.Ordinal));
             _presetPath += "/Preset/";
         }
 
@@ -94,51 +94,49 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
         #region 批处理相关
 
-        [Button("开始批处理")]
-        private void StartBatchProcessing()
-        {
+        [Button("开始批量导入")]
+        private void StartBatchImport() {
             List<Texture2D> textures = targets;
-            foreach (Texture2D texture in textures)
-            {
+            foreach (Texture2D texture in textures) {
                 string path = AssetDatabase.GetAssetPath(texture);
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-                if (importer == null)
-                {
+                if (importer == null) {
                     continue;
                 }
 
                 TextureImporterSettings textureSettings = LoadPreset(importer, texture);
                 importer.SetTextureSettings(textureSettings);
+                
+                if (preSet.importMode == SpriteImportMode.Multiple) {
+                    importer.spritesheet = GetSpritesheet(texture);
+                }
+                AssetDatabase.SaveAssetIfDirty(importer);
                 AssetDatabase.ImportAsset(path);
             }
         }
 
         private TextureImporterSettings LoadPreset(TextureImporter importer, Texture2D texture)
         {
+            importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = preSet.importMode;
+            importer.textureCompression = preSet.textureImporterCompression;
+            importer.filterMode = preSet.filterMode;
+            importer.mipmapEnabled = preSet.mipmapEnabled;
+            importer.spritePixelsPerUnit = preSet.pixelsPerUnit;
+
             TextureImporterSettings textureSettings = new TextureImporterSettings();
             importer.ReadTextureSettings(textureSettings);
-
-            textureSettings.textureType = TextureImporterType.Sprite;
+            
             textureSettings.spriteMeshType = preSet.spriteMeshType;
             textureSettings.wrapMode = preSet.wrapMode;
-            textureSettings.filterMode = preSet.filterMode;
-            importer.textureCompression = preSet.textureImporterCompression;
-
-            textureSettings.spritePixelsPerUnit = preSet.pixelsPerUnit;
+            
             textureSettings.spriteExtrude = preSet.spriteExtrude;
             textureSettings.spriteGenerateFallbackPhysicsShape = preSet.generatePhysicsShape;
             textureSettings.alphaIsTransparency = preSet.alphaIsTransparency;
             textureSettings.readable = preSet.readWriteEnabled;
-            textureSettings.mipmapEnabled = preSet.mipmapEnabled;
 
             textureSettings.spritePivot = GetSpritePivot(new Vector2Int(texture.width, texture.height));
-
-            if (preSet.importMode == SpriteImportMode.Multiple)
-            {
-                importer.spritesheet = GetSpritesheet(texture);
-            }
-
+            
             return textureSettings;
         }
 
@@ -179,20 +177,15 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
         private SpriteMetaData[] GetSpritesheet(Texture2D texture2D)
         {
             Rect[] rects;
-            if (preSet.autoSlicing)
-            {
+            if (preSet.autoSlicing) {
                 rects = InternalSpriteUtility.GenerateAutomaticSpriteRectangles(
                     texture2D, preSet.pixelsPerUnit, (int)preSet.spriteExtrude / 10);
-            }
-            else
-            {
-                if (preSet.slicingUseSize)
-                {
+            }else {
+                if (preSet.slicingUseSize) {
                     rects = InternalSpriteUtility.GenerateGridSpriteRectangles(
                         texture2D, Vector2.zero, preSet.slicingInfo, Vector2.zero);
                 }
-                else
-                {
+                else {
                     Vector2 targetSize = new Vector2(
                         (float)texture2D.width / preSet.slicingInfo.x, (float)texture2D.height / preSet.slicingInfo.y);
                     rects = InternalSpriteUtility.GenerateGridSpriteRectangles(

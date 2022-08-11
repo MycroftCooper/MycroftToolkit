@@ -40,35 +40,52 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
         public int width;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("自动扩展")]
         public bool autoExtend;
-        
-        [TabGroup("精灵处理器/Right","图片描边"),Button("图片描边", ButtonSizes.Medium)]
-        public Texture2D GenerateOutlineTexture(Texture2D targetTexture2D) {
+
+        [TabGroup("精灵处理器/Right", "图片描边"), Button("图片描边", ButtonSizes.Medium)]
+        public void GenerateOutlineTexture() {
+            if(targets.Count == 0)return;
+            resultPreview.Clear();
+            foreach (var target in targets) {
+                Texture2D result = GetOutlineTexture(target.texture);
+                result.filterMode = FilterMode.Point;
+                resultPreview.Add(result);
+            }
+        }
+        public Texture2D GetOutlineTexture(Texture2D targetTexture2D) {
             if (targetTexture2D == null) return null;
-            if (autoExtend) {
-                targetTexture2D = targetTexture2D.ExtendTexture(width,true);
-            }
-
-            var texture = CopyTexture(targetTexture2D, Vector2Int.zero, Vector2Int.zero);
+            Texture2D  copyTexture = autoExtend ? 
+                targetTexture2D.ExtendTexture(width,true) : 
+                targetTexture2D.CopyTexture(Vector2Int.zero, Vector2Int.zero);
+            copyTexture.Apply();
             
-            texture.Apply();
-            var colors = new Color[texture.width * texture.height];
-            for (var i = 0; i < texture.width; i++) {
-                for (var j = 0; j < texture.height; j++) {
-                    var left = i > 0 ? texture.GetPixel(i - 1, j).a : -1;
-                    var right = i < texture.width - 1 ? texture.GetPixel(i + 1, j).a : -1;
-                    var up = j > 0 ? texture.GetPixel(i, j - 1).a : -1;
-                    var down = j < texture.height - 1 ? texture.GetPixel(i, j + 1).a : -1;
-                    var currentColor = texture.GetPixel(i, j);
-                    var outline =
-                        Mathf.RoundToInt(Mathf.Max(Mathf.Max(left, up), Mathf.Max(right, down)) - currentColor.a);
-                    colors[i + j * texture.width] = Color.Lerp(currentColor, Color.white, outline);
-                }
+            Color[] colors =  copyTexture.GetColors();
+            List<Vector2Int> borderlinePoints = copyTexture.GetBorderlinePoints();
+            
+            int radius = lineMode == ELineMode.On ? Math.Max(1, width / 2) : width;
+            foreach (Vector2Int point in borderlinePoints) {
+                PointSetRadius targetPoints = new PointSetRadius(point, radius, distanceType);
+                targetPoints.ForEach((pos) => {
+                    int targetIndex = pos.x + pos.y * copyTexture.width;
+                    if (targetIndex >= colors.Length || targetIndex < 0) return;
+                    switch (lineMode) {
+                        case ELineMode.Out:
+                            if (copyTexture.GetPixel(pos.x, pos.y).a == 0)
+                                colors[targetIndex] = outlineColor;
+                            break;
+                        case ELineMode.On:
+                            colors[targetIndex] = outlineColor;
+                            break;
+                        case ELineMode.In:
+                            if (copyTexture.GetPixel(pos.x, pos.y).a != 0)
+                                colors[targetIndex] = outlineColor;
+                            break;
+                    }
+                });
             }
+            copyTexture.SetPixels(colors);
+            copyTexture.Apply();
 
-            texture.SetPixels(colors);
-            texture.Apply();
-
-            return texture;
+            return copyTexture;
         }
         #endregion
         
@@ -82,7 +99,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             var maxHeight = float.MinValue;
             var wholeWidth = 0f;
             for (var i = 0; i < targets.Count; i++) {
-                textures[i] = CopyTexture(targets[i].texture, Vector2Int.zero,Vector2Int.zero);
+                textures[i] = targets[i].texture.CopyTexture(Vector2Int.zero,Vector2Int.zero);
                 if (targets[i].rect.height > maxHeight) {
                     maxHeight = targets[i].rect.height;
                 }
@@ -100,8 +117,8 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
                 currentX += (int)currentSpriteRect.width;
             }
             targetTex.Apply();
-
-            resultPreview = new List<Texture2D> { targetTex };
+            resultPreview.Clear();
+            resultPreview.Add(targetTex);
         }
 
         #endregion
@@ -119,7 +136,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             var textures = new Texture2D[targets.Count];
             var maxHeight = float.MinValue;
             for (var i = 0; i < targets.Count; i++) {
-                var currentTexture = CopyTexture(targets[i].texture,Vector2Int.zero,Vector2Int.zero);
+                var currentTexture = targets[i].texture.CopyTexture(Vector2Int.zero,Vector2Int.zero);
                 var rect = targets[i].rect;
                 textures[i] = new Texture2D((int)rect.width, (int)rect.height);
                 for (int x = 0; x < rect.width; x++) {
@@ -133,32 +150,11 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
                     maxHeight = targets[i].rect.height;
                 }
             }
-
+            resultPreview.Clear();
             resultPreview = new List<Texture2D>(textures);
         }
         #endregion
-        
-        
-        private static Texture2D CopyTexture(Texture2D source, Vector2Int extendSize, Vector2Int offset) {
-            RenderTexture renderTex = RenderTexture.GetTemporary(
-                source.width,
-                source.height,
-                0,
-                RenderTextureFormat.Default,
-                RenderTextureReadWrite.Linear
-            );
 
-            Graphics.Blit(source, renderTex);
-            RenderTexture previous = RenderTexture.active;
-            RenderTexture.active = renderTex;
-            Texture2D readableText = new Texture2D(source.width+extendSize.x, source.height+extendSize.y);
-            readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), offset.x, offset.y);
-            readableText.Apply();
-            RenderTexture.active = previous;
-            RenderTexture.ReleaseTemporary(renderTex);
-            return readableText;
-        }
-        
         [VerticalGroup("精灵处理器/Left"), LabelText("保存结果"), Button]
         private void SaveTexture() {
             var path = EditorUtility.SaveFilePanel("保存图片处理结果", "", targets[0].name+"_", "png");

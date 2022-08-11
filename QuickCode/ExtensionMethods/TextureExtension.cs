@@ -56,7 +56,6 @@ namespace MycroftToolkit.QuickCode
 
                 extendSize = new Vector2Int(left + right, up + down);
                 offset= new Vector2Int(left,down);
-                if (extendSize == Vector2Int.zero) return target;
             }else {
                 extendSize = Vector2Int.one*extendWidth*2;
                 offset = Vector2Int.one * extendWidth;
@@ -65,7 +64,7 @@ namespace MycroftToolkit.QuickCode
             return CopyTexture(target, extendSize, offset);
         }
         
-        private static Texture2D CopyTexture(this Texture2D source, Vector2Int extendSize, Vector2Int offset) {
+        public static Texture2D CopyTexture(this Texture2D source, Vector2Int extendSize, Vector2Int offset) {
             RenderTexture renderTex = RenderTexture.GetTemporary(
                 source.width,
                 source.height,
@@ -78,11 +77,23 @@ namespace MycroftToolkit.QuickCode
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = renderTex;
             Texture2D readableText = new Texture2D(source.width+extendSize.x, source.height+extendSize.y);
+            readableText.filterMode = FilterMode.Point;
             readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), offset.x, offset.y);
             readableText.Apply();
             RenderTexture.active = previous;
             RenderTexture.ReleaseTemporary(renderTex);
             return readableText;
+        }
+
+        public static Color[] GetColors(this Texture2D target) {
+            Color[] output = new Color[target.width*target.height];
+            int index = 0;
+            for (var i = 0; i < target.width; i++) {
+                for (var j = 0; j < target.height; j++,index++) {
+                    output[index] = target.GetPixel(i, j);
+                }
+            }
+            return output;
         }
         
         public static List<Vector2Int> GetBorderlinePoints(this Texture2D target) {

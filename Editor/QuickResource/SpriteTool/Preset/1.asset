@@ -12,20 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05a8322c2764430ab601aa7a3240e740, type: 3}
   m_Name: 1
   m_EditorClassIdentifier: 
-  importMode: 1
+  importMode: 2
   spriteMeshType: 0
-  wrapMode: 0
+  wrapMode: 1
   filterMode: 0
   textureImporterCompression: 0
   pixelsPerUnit: 16
-  spriteExtrude: 0
+  spriteExtrude: 1
   generatePhysicsShape: 0
   alphaIsTransparency: 1
-  readWriteEnabled: 0
+  readWriteEnabled: 1
   mipmapEnabled: 0
-  pivotMode: 9
+  pivotMode: 7
   isPixels: 1
   pivot: {x: 8, y: 8}
-  autoSlicing: 1
+  autoSlicing: 0
   slicingUseSize: 0
-  slicingInfo: {x: 0, y: 0}
+  slicingInfo: {x: 4, y: 2}
