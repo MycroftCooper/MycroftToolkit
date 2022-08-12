@@ -22,6 +22,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
     
     
     public class PointSet {
+        private static readonly PointComparer Comparer = new PointComparer();
         internal SortedSet<Vector2Int> Points;
         public EPointSetType Type;
         public int Count => Points.Count;
@@ -32,18 +33,15 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         // ReSharper disable once MemberCanBeProtected.Global
         public PointSet(EPointSetType type = EPointSetType.Any) {
             Type = type;
-            Points = new SortedSet<Vector2Int>(new PointComparer());
+            Points = new SortedSet<Vector2Int>(Comparer);
         }
         public PointSet(List<Vector2Int> points, EPointSetType type = EPointSetType.Any) {
             Type = type;
-            Points = new SortedSet<Vector2Int>(new PointComparer());
-            foreach (var point in points) {
-                Points.Add(point);
-            }
+            Points = new SortedSet<Vector2Int>(points,Comparer);
         }
         public PointSet(SortedSet<Vector2Int> points, EPointSetType type = EPointSetType.Any) {
             Type = type;
-            Points = new SortedSet<Vector2Int>(points, new PointComparer());
+            Points = new SortedSet<Vector2Int>(points, Comparer);
         }
         public PointSet(Vector2Int centerPos, List<Vector2Int> template) {
             Type = EPointSetType.Any;
@@ -86,23 +84,23 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// 取两点集交集
         /// </summary>
         public PointSet Intersect(PointSet pointSet) {
-            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)Points.Intersect(pointSet.Points);
+            IEnumerable<Vector2Int> target = Points.Intersect(pointSet.Points);
+            SortedSet<Vector2Int> newPoints = new SortedSet<Vector2Int>(target,Comparer);
             return new PointSet(newPoints);
         }
+        
         /// <summary>
         /// 两点集是否有交集
         /// </summary>
         public bool IsIntersect(PointSet pointSet) {
-            foreach (var point in pointSet.Points) {
-                if (Points.Contains(point)) return true;
-            }
-            return false;
+            return pointSet.Points.Any(point => Points.Contains(point));
         }
         /// <summary>
         /// 取两点集并集
         /// </summary>
         public static PointSet operator +(PointSet pointSet1, PointSet pointSet2) {
-            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1.Points.Union(pointSet2.Points);
+            IEnumerable<Vector2Int> target = pointSet1.Points.Union(pointSet2.Points);
+            SortedSet<Vector2Int> newPoints = new SortedSet<Vector2Int>(target,Comparer);
             return new PointSet(newPoints);
         }
 
@@ -110,7 +108,8 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         /// 取两点集差集
         /// </summary>
         public static PointSet operator -(PointSet pointSet1, PointSet pointSet2) {
-            SortedSet<Vector2Int> newPoints = (SortedSet<Vector2Int>)pointSet1.Points.Except(pointSet2.Points);
+            IEnumerable<Vector2Int> target = pointSet1.Points.Except(pointSet2.Points);
+            SortedSet<Vector2Int> newPoints = new SortedSet<Vector2Int>(target,Comparer);
             return new PointSet(newPoints);
         }
         /// <summary>
@@ -136,7 +135,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         #endregion
 
         public void Move(Vector2Int offset) {
-            SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>();
+            SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>(Comparer);
             foreach (var i in Points) {
                 newPS.Add(i + offset);
             }
@@ -144,7 +143,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             Points = newPS;
         }
         public void Flip_X() {
-            SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>();
+            SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>(Comparer);
             foreach (var i in Points) {
                 newPS.Add(new Vector2Int(i.x, -i.y));
             }
@@ -152,7 +151,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             Points = newPS;
         }
         public void Flip_Y() {
-            SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>();
+            SortedSet<Vector2Int> newPS = new SortedSet<Vector2Int>(Comparer);
             foreach (var i in Points) {
                 newPS.Add(new Vector2Int(-i.x, i.y));
             }

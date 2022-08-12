@@ -1,10 +1,10 @@
 using System.Collections.Generic;
+using MycroftToolkit.DiscreteGridToolkit;
 using MycroftToolkit.DiscreteGridToolkit.Square;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace MycroftToolkit.QuickCode
-{
+namespace MycroftToolkit.QuickCode {
     public static class TextureExtension {
         /// <summary>
         /// 只设置颜色不改变alpha
@@ -32,39 +32,68 @@ namespace MycroftToolkit.QuickCode
             tempColor.a = alpha;
             spriteRenderer.color = tempColor;
         }
-        
+
+        public static Vector2Int GetSize(this Texture target) => new Vector2Int(target.width, target.height);
+        public static RectInt GetRectInt(this Texture target) => new RectInt(Vector2Int.zero, target.GetSize());
+
+        public static Texture2D GetSlicedTexture(this Sprite sprite) {
+            Texture2D source = sprite.texture;
+            RectInt rect = new RectInt(sprite.rect.position.ToVec2Int(), sprite.rect.size.ToVec2Int());
+            Texture2D output = new Texture2D(rect.width, rect.height);
+            for (int x = 0; x < rect.width; x++) {
+                for (int y = 0; y < rect.height; y++) {
+                    Color targetColor = source.GetPixel(rect.x + x, rect.y + y);
+                    output.SetPixel(x, y, targetColor);
+                }
+            }
+
+            output.Apply();
+            return output;
+        }
+
         public static Texture2D ExtendTexture(this Texture2D target, int extendWidth, bool scanPixels = false) {
             Vector2Int extendSize, offset;
             if (scanPixels) {
                 int up = 0, down = 0, left = 0, right = 0;
                 for (int x = 0; x < target.width; x++) {
-                    if(up + down == extendWidth*2)
-                        break;
-                    if (up == 0 && target.GetPixel(x, target.height - 1).a != 0)
-                        up = extendWidth;
-                    if (down == 0 && target.GetPixel(x, 0).a != 0)
-                        down = extendWidth;
+                    if (up + down == extendWidth * 2) break;
+                    if (up == 0 && target.GetPixel(x, target.height - 1).a != 0) up = extendWidth;
+                    if (down == 0 && target.GetPixel(x, 0).a != 0) down = extendWidth;
                 }
+
                 for (int y = 0; y < target.height; y++) {
-                    if(left + right == extendWidth*2)
-                        break;
-                    if (left == 0 && target.GetPixel(0, y).a != 0)
-                        left = extendWidth;
-                    if (right == 0 && target.GetPixel(target.width-1, 0).a != 0)
-                        right = extendWidth;
+                    if (left + right == extendWidth * 2) break;
+                    if (left == 0 && target.GetPixel(0, y).a != 0) left = extendWidth;
+                    if (right == 0 && target.GetPixel(target.width - 1, 0).a != 0) right = extendWidth;
                 }
 
                 extendSize = new Vector2Int(left + right, up + down);
-                offset= new Vector2Int(left,down);
-            }else {
-                extendSize = Vector2Int.one*extendWidth*2;
+                offset = new Vector2Int(left, down);
+            } else {
+                extendSize = Vector2Int.one * extendWidth * 2;
                 offset = Vector2Int.one * extendWidth;
             }
 
-            return CopyTexture(target, extendSize, offset);
+            return CopyTexture_CPU(target, extendSize, offset);
         }
-        
-        public static Texture2D CopyTexture(this Texture2D source, Vector2Int extendSize, Vector2Int offset) {
+
+        public static Texture2D CopyTexture_CPU(this Texture2D source, Vector2Int extendSize, Vector2Int offset) {
+            Texture2D output = new Texture2D(source.width + extendSize.x, source.height + extendSize.y);
+            for (int y = 0; y < output.height; y++) {
+                for (int x = 0; x < output.width; x++) {
+                    if (x < offset.x || x > source.width || y < offset.y || y > source.height) {
+                        output.SetPixel(x,y,Color.clear);
+                    } else {
+                        Color targetColor = source.GetPixel(x-offset.x,y-offset.y);
+                        output.SetPixel(x,y,targetColor);
+                    }
+                }
+            }
+            output.Apply();
+            return output;
+        }
+
+        public static Texture2D CopyTexture_GPU(this Texture2D source, Vector2Int extendSize, Vector2Int offset) {
             RenderTexture renderTex = RenderTexture.GetTemporary(
                 source.width,
                 source.height,
@@ -76,41 +105,52 @@ namespace MycroftToolkit.QuickCode
             Graphics.Blit(source, renderTex);
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = renderTex;
-            Texture2D readableText = new Texture2D(source.width+extendSize.x, source.height+extendSize.y);
+            Texture2D readableText = new Texture2D(source.width + extendSize.x, source.height + extendSize.y);
             readableText.filterMode = FilterMode.Point;
             readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), offset.x, offset.y);
             readableText.Apply();
+
+            if (extendSize != Vector2Int.zero) {
+                PointSet cleanPointSet = new PointSetRect(readableText.GetRectInt()) - 
+                                         new PointSetRect(new RectInt(offset, source.GetSize()));
+                cleanPointSet.ForEach((point) => {
+                    readableText.SetPixel(point.x,point.y,Color.clear);
+                });
+            }
+            readableText.Apply();
+            
             RenderTexture.active = previous;
             RenderTexture.ReleaseTemporary(renderTex);
             return readableText;
         }
 
         public static Color[] GetColors(this Texture2D target) {
-            Color[] output = new Color[target.width*target.height];
+            Color[] output = new Color[target.width * target.height];
             int index = 0;
-            for (var i = 0; i < target.width; i++) {
-                for (var j = 0; j < target.height; j++,index++) {
-                    output[index] = target.GetPixel(i, j);
+            for (var y = 0; y < target.height; y++) {
+                for (var x = 0; x < target.width; x++, index++) {
+                    output[index] = target.GetPixel(x, y);
                 }
             }
             return output;
         }
-        
+
         public static List<Vector2Int> GetBorderlinePoints(this Texture2D target) {
             List<Vector2Int> output = new List<Vector2Int>();
             for (int x = 0; x < target.width; x++) {
                 for (int y = 0; y < target.height; y++) {
-                    if(target.GetPixel(x,y).a == 0)continue;
-                    
+                    if (target.GetPixel(x, y).a == 0) continue;
+
                     Vector2Int targetPoint = new Vector2Int(x, y);
                     Vector2Int[] neighbors = targetPoint.GetNeighborsD4();
                     foreach (var neighbor in neighbors) {
-                        if (neighbor.x < 0 || neighbor.x >= target.width || 
-                            neighbor.y < 0 || neighbor.y >= target.width) {
+                        if (neighbor.x < 0 || neighbor.x >= target.width ||
+                            neighbor.y < 0 || neighbor.y >= target.height) {
                             continue;
                         }
+
                         if (target.GetPixel(neighbor.x, neighbor.y).a == 0) {
-                            output.Add(neighbor);
+                            output.Add(new Vector2Int(x,y));
                         }
                     }
                 }

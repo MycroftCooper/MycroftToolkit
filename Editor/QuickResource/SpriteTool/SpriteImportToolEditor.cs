@@ -10,11 +10,9 @@ using UnityEngine;
 
 namespace MycroftToolkit.QuickResource.SpriteImportTool {
 #if UNITY_EDITOR
-    public class SpriteImportToolEditor : OdinEditorWindow
-    {
+    public class SpriteImportToolEditor : OdinEditorWindow {
         [MenuItem("Assets/QuickResource/Sprite/ImportTool")]
-        private static void Open()
-        {
+        private static void Open() {
             EditorWindow window = GetWindow<SpriteImportToolEditor>("贴图导入工具");
             window.minSize = new Vector2(800, 500);
             window.Focus();
@@ -59,18 +57,15 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
 
         [VerticalGroup("Split/Right"), Button("新建预设"), PropertyOrder(3)]
-        private void NewPreset()
-        {
-            if (string.IsNullOrWhiteSpace(newPreSetName))
-            {
+        private void NewPreset() {
+            if (string.IsNullOrWhiteSpace(newPreSetName)) {
                 debugInfo = "Error>新预设名称不合法!";
                 _showDebug = true;
                 return;
             }
 
             string targetPath = _presetPath + newPreSetName + ".asset";
-            if (File.Exists(targetPath))
-            {
+            if (File.Exists(targetPath)) {
                 debugInfo = "Error>存在同名预设,无法新建!";
                 _showDebug = true;
                 return;
@@ -106,17 +101,17 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
                 TextureImporterSettings textureSettings = LoadPreset(importer, texture);
                 importer.SetTextureSettings(textureSettings);
-                
+
                 if (preSet.importMode == SpriteImportMode.Multiple) {
                     importer.spritesheet = GetSpritesheet(texture);
                 }
+
                 AssetDatabase.SaveAssetIfDirty(importer);
                 AssetDatabase.ImportAsset(path);
             }
         }
 
-        private TextureImporterSettings LoadPreset(TextureImporter importer, Texture2D texture)
-        {
+        private TextureImporterSettings LoadPreset(TextureImporter importer, Texture2D texture) {
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = preSet.importMode;
             importer.textureCompression = preSet.textureImporterCompression;
@@ -126,24 +121,22 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
             TextureImporterSettings textureSettings = new TextureImporterSettings();
             importer.ReadTextureSettings(textureSettings);
-            
+
             textureSettings.spriteMeshType = preSet.spriteMeshType;
             textureSettings.wrapMode = preSet.wrapMode;
-            
+
             textureSettings.spriteExtrude = preSet.spriteExtrude;
             textureSettings.spriteGenerateFallbackPhysicsShape = preSet.generatePhysicsShape;
             textureSettings.alphaIsTransparency = preSet.alphaIsTransparency;
             textureSettings.readable = preSet.readWriteEnabled;
 
             textureSettings.spritePivot = GetSpritePivot(new Vector2Int(texture.width, texture.height));
-            
+
             return textureSettings;
         }
 
-        private Vector2 GetSpritePivot(Vector2Int textureSize)
-        {
-            switch (preSet.pivotMode)
-            {
+        private Vector2 GetSpritePivot(Vector2Int textureSize) {
+            switch (preSet.pivotMode) {
                 case SpriteAlignment.Center:
                     return new Vector2(0.5f, 0.5f);
                 case SpriteAlignment.TopLeft:
@@ -163,29 +156,23 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
                 case SpriteAlignment.BottomRight:
                     return new Vector2(1, 0);
                 case SpriteAlignment.Custom:
-                    if (!preSet.isPixels)
-                    {
-                        return preSet.pivot;
-                    }
-
-                    return new Vector2(preSet.pivot.x / textureSize.x, preSet.pivot.y / textureSize.y);
+                    return !preSet.isPixels ? 
+                        preSet.pivot : new Vector2(preSet.pivot.x / textureSize.x, preSet.pivot.y / textureSize.y);
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
 
-        private SpriteMetaData[] GetSpritesheet(Texture2D texture2D)
-        {
+        private SpriteMetaData[] GetSpritesheet(Texture2D texture2D) {
             Rect[] rects;
             if (preSet.autoSlicing) {
                 rects = InternalSpriteUtility.GenerateAutomaticSpriteRectangles(
                     texture2D, preSet.pixelsPerUnit, (int)preSet.spriteExtrude / 10);
-            }else {
+            } else {
                 if (preSet.slicingUseSize) {
                     rects = InternalSpriteUtility.GenerateGridSpriteRectangles(
                         texture2D, Vector2.zero, preSet.slicingInfo, Vector2.zero);
-                }
-                else {
+                } else {
                     Vector2 targetSize = new Vector2(
                         (float)texture2D.width / preSet.slicingInfo.x, (float)texture2D.height / preSet.slicingInfo.y);
                     rects = InternalSpriteUtility.GenerateGridSpriteRectangles(
@@ -194,16 +181,13 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             }
 
             SpriteMetaData[] spMetaList = new SpriteMetaData[rects.Length];
-            for (int i = 0; i < rects.Length; i++)
-            {
-                SpriteMetaData metaData = new SpriteMetaData
-                {
+            for (int i = 0; i < rects.Length; i++) {
+                SpriteMetaData metaData = new SpriteMetaData {
                     rect = rects[i],
                     name = texture2D.name + "_" + i,
                     alignment = (int)preSet.pivotMode
                 };
-                if (metaData.alignment == (int)SpriteAlignment.Custom)
-                {
+                if (metaData.alignment == (int)SpriteAlignment.Custom) {
                     metaData.pivot = GetSpritePivot(metaData.rect.size.ToVec2Int());
                 }
 

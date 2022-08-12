@@ -20,9 +20,17 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             window.Show();
         }
         
+        private void Update() {
+            var array = Selection.GetFiltered<Sprite>(SelectionMode.ExcludePrefab | SelectionMode.Editable);
+            if (array.Length == 0) return;
+            targets.Clear();
+            targets.AddRange(array);
+        }
+        
         [HorizontalGroup("精灵处理器",width:500)]
         [VerticalGroup("精灵处理器/Left"), Title("检查器")]
-        [VerticalGroup("精灵处理器/Left"),LabelWidth(60), LabelText("目标预览"), AssetSelector]
+        [VerticalGroup("精灵处理器/Left"),LabelWidth(60), LabelText("目标预览")]
+        [AssetSelector, HideReferenceObjectPicker]
         public List<Sprite> targets = new List<Sprite>();
         
         [VerticalGroup("精灵处理器/Left"),LabelWidth(60), LabelText("结果预览"), PreviewField(256, ObjectFieldAlignment.Left), ReadOnly]
@@ -36,7 +44,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
         public ELineMode lineMode;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("距离模式")]
         public EDistanceType distanceType;
-        [TabGroup("精灵处理器/Right","图片描边"), LabelText("距离"), Range(1,64)]
+        [TabGroup("精灵处理器/Right","图片描边"), LabelText("距离"), PropertyRange(1,64)]
         public int width;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("自动扩展")]
         public bool autoExtend;
@@ -46,7 +54,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             if(targets.Count == 0)return;
             resultPreview.Clear();
             foreach (var target in targets) {
-                Texture2D result = GetOutlineTexture(target.texture);
+                Texture2D result = GetOutlineTexture(target.GetSlicedTexture());
                 result.filterMode = FilterMode.Point;
                 resultPreview.Add(result);
             }
@@ -55,13 +63,14 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             if (targetTexture2D == null) return null;
             Texture2D  copyTexture = autoExtend ? 
                 targetTexture2D.ExtendTexture(width,true) : 
-                targetTexture2D.CopyTexture(Vector2Int.zero, Vector2Int.zero);
+                targetTexture2D.CopyTexture_CPU(Vector2Int.zero, Vector2Int.zero);
             copyTexture.Apply();
-            
+
             Color[] colors =  copyTexture.GetColors();
+
             List<Vector2Int> borderlinePoints = copyTexture.GetBorderlinePoints();
             
-            int radius = lineMode == ELineMode.On ? Math.Max(1, width / 2) : width;
+            int radius = lineMode == ELineMode.On ? width / 2 : width;
             foreach (Vector2Int point in borderlinePoints) {
                 PointSetRadius targetPoints = new PointSetRadius(point, radius, distanceType);
                 targetPoints.ForEach((pos) => {
@@ -76,7 +85,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
                             colors[targetIndex] = outlineColor;
                             break;
                         case ELineMode.In:
-                            if (copyTexture.GetPixel(pos.x, pos.y).a != 0)
+                            if (pos != targetPoints.Center && copyTexture.GetPixel(pos.x, pos.y).a != 0)
                                 colors[targetIndex] = outlineColor;
                             break;
                     }
@@ -99,7 +108,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
             var maxHeight = float.MinValue;
             var wholeWidth = 0f;
             for (var i = 0; i < targets.Count; i++) {
-                textures[i] = targets[i].texture.CopyTexture(Vector2Int.zero,Vector2Int.zero);
+                textures[i] = targets[i].texture.CopyTexture_GPU(Vector2Int.zero,Vector2Int.zero);
                 if (targets[i].rect.height > maxHeight) {
                     maxHeight = targets[i].rect.height;
                 }
@@ -125,27 +134,15 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
 
         #region 图片拆分相关
-        [TabGroup("精灵处理器/Right","图片拆分"), ShowInInspector, NonSerialized, HideReferenceObjectPicker, LabelText("名字前缀")]
-        public string IndependentNamePrefix;
-
         [TabGroup("精灵处理器/Right","图片拆分"), Button("拆分", ButtonSizes.Medium)]
         public void GenerateIndependentTexture() {
-            if (targets.Count == 0 || string.IsNullOrEmpty(IndependentNamePrefix))
+            if (targets.Count == 0)
                 return;
 
             var textures = new Texture2D[targets.Count];
             var maxHeight = float.MinValue;
             for (var i = 0; i < targets.Count; i++) {
-                var currentTexture = targets[i].texture.CopyTexture(Vector2Int.zero,Vector2Int.zero);
-                var rect = targets[i].rect;
-                textures[i] = new Texture2D((int)rect.width, (int)rect.height);
-                for (int x = 0; x < rect.width; x++) {
-                    for (int y = 0; y < rect.height; y++) {
-                        textures[i].SetPixel(x, y, currentTexture.GetPixel(x + (int)rect.x, y + (int)rect.y));
-                    }
-                }
-
-                textures[i].Apply();
+                textures[i] = targets[i].GetSlicedTexture();
                 if (targets[i].rect.height > maxHeight) {
                     maxHeight = targets[i].rect.height;
                 }
@@ -157,13 +154,17 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
         [VerticalGroup("精灵处理器/Left"), LabelText("保存结果"), Button]
         private void SaveTexture() {
-            var path = EditorUtility.SaveFilePanel("保存图片处理结果", "", targets[0].name+"_", "png");
-            if (string.IsNullOrEmpty(path) || resultPreview.Count == 0) return;
+            if(resultPreview.Count == 0) return;
+            string defaultName = targets[0].name.Substring(0, targets[0].name.IndexOf("_0", StringComparison.Ordinal));
+            string path = EditorUtility.SaveFilePanel("保存图片处理结果", "", defaultName, "png");
+            if (string.IsNullOrEmpty(path)) return;
+            
             if (resultPreview.Count == 1) {
                 File.WriteAllBytes(path, resultPreview[0].EncodeToPNG());
             }else {
+                path = path.Remove(path.Length - 4, 4);
                 for (int i = 0; i < resultPreview.Count; i++) {
-                    File.WriteAllBytes(path+"_"+i, resultPreview[i].EncodeToPNG());
+                    File.WriteAllBytes(path +"_"+ i +".png", resultPreview[i].EncodeToPNG());
                 }
             }
             
