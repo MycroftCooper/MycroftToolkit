@@ -102,6 +102,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
                 TextureImporterSettings textureSettings = LoadPreset(importer, texture);
                 importer.SetTextureSettings(textureSettings);
+                importer.SaveAndReimport();
                 EditorUtility.SetDirty(importer);
                 AssetDatabase.SaveAssetIfDirty(importer);
                 AssetDatabase.ImportAsset(path);
@@ -109,6 +110,7 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
                 if (preSet.importMode != SpriteImportMode.Multiple) continue;
                 importer.spritesheet = GetSpritesheet(texture);
                 EditorUtility.SetDirty(importer);
+                importer.SaveAndReimport();
             }
             AssetDatabase.Refresh();
         }
