@@ -39,13 +39,13 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
         #region 图片描边
         public enum ELineMode {Out, On, In }
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("描边颜色")]
-        public Color outlineColor;
+        public Color outlineColor = Color.white;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("描边模式")]
         public ELineMode lineMode;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("距离模式")]
         public EDistanceType distanceType;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("距离"), PropertyRange(1,64)]
-        public int width;
+        public int width = 1;
         [TabGroup("精灵处理器/Right","图片描边"), LabelText("自动扩展")]
         public bool autoExtend;
 

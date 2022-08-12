@@ -7,6 +7,7 @@ using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace MycroftToolkit.QuickResource.SpriteImportTool {
 #if UNITY_EDITOR
@@ -101,14 +102,15 @@ namespace MycroftToolkit.QuickResource.SpriteImportTool {
 
                 TextureImporterSettings textureSettings = LoadPreset(importer, texture);
                 importer.SetTextureSettings(textureSettings);
-
-                if (preSet.importMode == SpriteImportMode.Multiple) {
-                    importer.spritesheet = GetSpritesheet(texture);
-                }
-
+                EditorUtility.SetDirty(importer);
                 AssetDatabase.SaveAssetIfDirty(importer);
                 AssetDatabase.ImportAsset(path);
+                
+                if (preSet.importMode != SpriteImportMode.Multiple) continue;
+                importer.spritesheet = GetSpritesheet(texture);
+                EditorUtility.SetDirty(importer);
             }
+            AssetDatabase.Refresh();
         }
 
         private TextureImporterSettings LoadPreset(TextureImporter importer, Texture2D texture) {
