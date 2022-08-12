@@ -7,7 +7,6 @@ using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace MycroftToolkit.QuickResource.SpriteImportTool {
 #if UNITY_EDITOR
