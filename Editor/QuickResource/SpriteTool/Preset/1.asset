@@ -23,9 +23,9 @@ MonoBehaviour:
   alphaIsTransparency: 1
   readWriteEnabled: 1
   mipmapEnabled: 0
-  pivotMode: 7
+  pivotMode: 4
   isPixels: 1
   pivot: {x: 8, y: 8}
   autoSlicing: 0
   slicingUseSize: 0
-  slicingInfo: {x: 4, y: 2}
+  slicingInfo: {x: 1, y: 4}

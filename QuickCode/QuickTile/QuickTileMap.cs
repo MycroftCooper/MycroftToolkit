@@ -1,11 +1,14 @@
+using System.Collections.Generic;
+
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using System.Collections.Generic;
-using MycroftToolkit.DiscreteGridToolkit;
-using MycroftToolkit.MathTool;
-using MycroftToolkit.QuickCode;
 
-namespace MycroftToolkit.QuickTileToolkit {
+using MycroftToolkit.DiscreteGridToolkit;
+using MycroftToolkit.DiscreteGridToolkit.Square;
+using MycroftToolkit.MathTool;
+
+
+namespace MycroftToolkit.QuickCode.QuickTile {
     public class QuickTileData {
         public Vector2Int Pos;
         public IQuickTile QuickTile;
@@ -60,7 +63,7 @@ namespace MycroftToolkit.QuickTileToolkit {
             if (!isCover) {
                 RemoveTiles(pos, pos + quickTile.Size - Vector2Int.one);
             }
-            QuickTileData td = quickTile.SetTile(pos, TheTilemap);
+            QuickTileData td = quickTile.GetTileData(pos, this);
             for (int x = pos.x; x < pos.x + quickTile.Size.x; x++) {
                 for (int y = pos.y; y < pos.y + quickTile.Size.y; y++) {
                     if (x < 0 || x >= LogicMap.GetLength(0) || y < 0 || y >= LogicMap.GetLength(1))
@@ -81,7 +84,22 @@ namespace MycroftToolkit.QuickTileToolkit {
             if (LogicMap[pos.x, pos.y].QuickTile is T) return (T)LogicMap[pos.x, pos.y].QuickTile;
             return default;
         }
-        
+
+        public Dictionary<Vector2Int, IQuickTile> GetTileNeighbors(Vector2Int pos, int radius, EDistanceType distanceType = EDistanceType.D8) {
+            if (!IsInMap(pos)) return null;
+
+            Dictionary<Vector2Int, IQuickTile> output = new Dictionary<Vector2Int, IQuickTile>();
+            PointSetRadius neighborsPos = new PointSetRadius(pos,radius,distanceType);
+            IQuickTile thisTile = GetTile(pos);
+            neighborsPos.ForEach((p) => {
+                if(!IsInMap(p))return;
+                IQuickTile tile = GetTile(p);
+                if(tile != thisTile && output.ContainsValue(tile))
+                    output.Add(p, tile);
+            });
+            return output;
+        }
+
         public QuickTileData GetTileData(Vector2Int pos)
             => LogicMap[pos.x, pos.y];
 
@@ -131,7 +149,7 @@ namespace MycroftToolkit.QuickTileToolkit {
             }
         }
         
-        public void FillDifferentSizesTile(RectInt rect, Dictionary<Vector2Int, QuickQuickTileRandom> tiles, QuickRandom random) {
+        public void FillDifferentSizesTile(RectInt rect, Dictionary<Vector2Int, QuickTileRandom> tiles, QuickRandom random) {
             Vector2Int start = rect.min;
             Vector2Int end = rect.max;
             
@@ -172,7 +190,7 @@ namespace MycroftToolkit.QuickTileToolkit {
             }
         }
         
-        public void FillDifferentSizesTile_BigFirst(RectInt rect, Dictionary<Vector2Int, QuickQuickTileRandom> tiles) {
+        public void FillDifferentSizesTile_BigFirst(RectInt rect, Dictionary<Vector2Int, QuickTileRandom> tiles) {
             Vector2Int start = rect.min;
             Vector2Int end = rect.max;
             for (int y = start.y; y < end.y; y++) {
@@ -216,59 +234,5 @@ namespace MycroftToolkit.QuickTileToolkit {
                 }
             }
         }
-        
-        #region GO专用
-        public void SetTileSprite(Vector2Int pos, Sprite sprite, bool isFlip = false) {
-            QuickTileGo quickTile = LogicMap[pos.x, pos.y].QuickTile as QuickTileGo;
-            if (quickTile == null) return;
-            quickTile.Go.GetComponent<SpriteRenderer>().sprite = sprite;
-            if (isFlip) quickTile.Go.GetComponent<SpriteRenderer>().flipX = true;
-        }
-        
-        public void SetTileSpriteLayer(Vector2Int pos, string layerName, int layerID) {
-            QuickTileGo quickTile = LogicMap[pos.x, pos.y].QuickTile as QuickTileGo;
-            if (quickTile == null) return;
-            SpriteRenderer sr = quickTile.Go.GetComponent<SpriteRenderer>();
-            sr.sortingLayerName = layerName;
-            sr.sortingOrder = layerID;
-        }
-        
-        public enum EPivot { Top, Bottom, Left, Right, Center, BottomLeft, BottomRight, TopRight, TopLeft }
-        
-        public void SetTile_Pivot(Vector2Int pos, QuickTileGo quickTile, EPivot pivot) {
-            QuickTileData td = SetTile(pos, quickTile);
-            Transform target = (td.QuickTile as QuickTileGo)?.Go.transform;
-            if (!target) return;
-            switch (pivot) {
-                case EPivot.Top:
-                    target.localPosition = new Vector3(pos.x + quickTile.Size.x / 2f, pos.y + quickTile.Size.y);
-                    break;
-                case EPivot.Center:
-                    target.localPosition = new Vector3(pos.x + quickTile.Size.x / 2f, pos.y + quickTile.Size.y / 2f);
-                    break;
-                case EPivot.Left:
-                    target.localPosition = new Vector3(pos.x, pos.y + quickTile.Size.y / 2f);
-                    break;
-                case EPivot.Right:
-                    target.localPosition = new Vector3(pos.x + quickTile.Size.x, pos.y + quickTile.Size.y / 2f);
-                    break;
-                case EPivot.Bottom:
-                    target.localPosition = new Vector3(pos.x + quickTile.Size.x / 2f, pos.y);
-                    break;
-                case EPivot.TopLeft:
-                    target.localPosition = new Vector3(pos.x, pos.y + quickTile.Size.y);
-                    break;
-                case EPivot.TopRight:
-                    target.localPosition = new Vector3(pos.x + quickTile.Size.x, pos.y + quickTile.Size.y);
-                    break;
-                case EPivot.BottomLeft:
-                    target.localPosition = new Vector3(pos.x, pos.y);
-                    break;
-                case EPivot.BottomRight:
-                    target.localPosition = new Vector3(pos.x + quickTile.Size.x, pos.y);
-                    break;
-            }
-        }
-        #endregion
     }
 }
