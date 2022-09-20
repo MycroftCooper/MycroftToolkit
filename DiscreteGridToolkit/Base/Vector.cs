@@ -119,5 +119,17 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         
 
         #endregion
+
+        public static float ToAngle(this Vector2 dir) {
+            return Vector2.SignedAngle(Vector2.right, dir);
+        }
+        
+        public static float ToAngle(this Vector3 dir) {
+            return Vector3.SignedAngle(Vector3.right, dir, Vector3.forward);
+        }
+
+        public static Vector2 AngleToDir(float angle) {
+            return new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)).normalized;
+        }
     }
 }

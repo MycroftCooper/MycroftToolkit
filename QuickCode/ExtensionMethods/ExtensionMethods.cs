@@ -46,6 +46,18 @@ namespace MycroftToolkit.QuickCode {
             return null;
         }
 
+        public static List<Transform> FindAllNameContains(this Transform tr, string name) {
+            List<Transform> output = new List<Transform>();
+            for (int i = 0; i < tr.childCount; i++) {
+                Transform child = tr.GetChild(i);
+                output.AddRange(child.FindAllNameContains(name));
+                if (child.name.Contains(name)) {
+                    output.Add(child);
+                }
+            }
+            return output;
+        }
+
         public static void ForEach<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, Action<KeyValuePair<TKey, TValue>> action) {
             if (action == null || dictionary.Count == 0) return;
             for (int i = 0; i < dictionary.Count; i++) {
