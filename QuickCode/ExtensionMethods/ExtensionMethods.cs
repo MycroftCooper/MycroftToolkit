@@ -6,6 +6,14 @@ using UnityEngine.UI;
 
 namespace MycroftToolkit.QuickCode {
     public static class ExtensionMethods {
+        public static T GetOrAddComponent<T>(this GameObject go) where T : Component {
+            T t = go.GetComponent<T>();
+            if (null == t) {
+                t = go.AddComponent<T>();
+            }
+            return t;
+        }
+
         public static void RemoveComponent<TComponent>(this GameObject obj, bool immediate = false) {
             TComponent component = obj.GetComponent<TComponent>();
             if (component != null) {
@@ -71,16 +79,6 @@ namespace MycroftToolkit.QuickCode {
 
                 break;
             }
-        }
-
-        public static void PrintSystemInfo() {
-            string systemInfo =
-                $"OS:{SystemInfo.operatingSystem}-{SystemInfo.processorType}-{SystemInfo.processorCount}\n" +
-                $"MemorySize:{SystemInfo.systemMemorySize}\n" +
-                $"Graphics:{SystemInfo.graphicsDeviceName} " +
-                $"-vendor:{SystemInfo.graphicsDeviceVendor} " +
-                $"-memorySize:{SystemInfo.graphicsMemorySize} -deviceVersion:{SystemInfo.graphicsDeviceVersion}";
-            Debug.Log(systemInfo);
         }
     }
 }
