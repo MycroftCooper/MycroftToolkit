@@ -58,12 +58,29 @@ namespace MycroftToolkit.QuickCode {
             return output;
         }
 
-        public static void ForEach<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, Action<KeyValuePair<TKey, TValue>> action) {
-            if (action == null || dictionary.Count == 0) return;
-            for (int i = 0; i < dictionary.Count; i++) {
-                var item = dictionary.ElementAt(i);
-                action(item);
+        /// <summary>
+        /// 获取Hierarchy视图中的对象的路劲
+        /// </summary>
+        public static void GetPathInHierarchy(this Transform tran, ref string path) {
+            while (true) {
+                path = string.IsNullOrEmpty(path) ? tran.name : $"{tran.name}/{path}";
+                if (tran.parent != null) {
+                    tran = tran.parent;
+                    continue;
+                }
+
+                break;
             }
+        }
+
+        public static void PrintSystemInfo() {
+            string systemInfo =
+                $"OS:{SystemInfo.operatingSystem}-{SystemInfo.processorType}-{SystemInfo.processorCount}\n" +
+                $"MemorySize:{SystemInfo.systemMemorySize}\n" +
+                $"Graphics:{SystemInfo.graphicsDeviceName} " +
+                $"-vendor:{SystemInfo.graphicsDeviceVendor} " +
+                $"-memorySize:{SystemInfo.graphicsMemorySize} -deviceVersion:{SystemInfo.graphicsDeviceVersion}";
+            Debug.Log(systemInfo);
         }
     }
 }

@@ -32,6 +32,43 @@ namespace MycroftToolkit.QuickCode {
             tempColor.a = alpha;
             spriteRenderer.color = tempColor;
         }
+        
+        /// <summary>
+        /// uint转换为Color
+        /// </summary>
+        public static Color ParseColor(uint input) {
+            return new Color(
+                ((input >> 16) & 0xff) / 255.0f,
+                ((input >> 8) & 0xff) / 255.0f,
+                (input & 0xff) / 255.0f,
+                ((input >> 24) & 0xff) / 255.0f
+            );
+        }
+
+        /// <summary>
+        /// uint转换为Color, 但alpha值为1
+        /// </summary>
+        public static Color ParseSolidColor(uint input) {
+            return new Color(
+                ((input >> 16) & 0xff) / 255.0f,
+                ((input >> 8) & 0xff) / 255.0f,
+                (input & 0xff) / 255.0f,
+                1.0f
+            );
+        }
+
+        /// <summary>
+        /// uint(为BGR格式)转换为Color, 但alpha值为1
+        /// </summary>
+        public static Color ParseSolidColor_BGR(uint input) {
+            return new Color(
+                (input & 0xff) / 255.0f,
+                ((input >> 8) & 0xff) / 255.0f,
+                ((input >> 16) & 0xff) / 255.0f,
+                1.0f
+            );
+        }
+
 
         public static Vector2Int GetSize(this Texture target) => new Vector2Int(target.width, target.height);
         public static RectInt GetRectInt(this Texture target) => new RectInt(Vector2Int.zero, target.GetSize());

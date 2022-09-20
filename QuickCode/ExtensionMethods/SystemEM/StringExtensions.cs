@@ -3,9 +3,6 @@ using System.Globalization;
 using System.Text;
 
 namespace MycroftToolkit.QuickCode {
-    //
-    // 摘要:
-    //     String method extensions.
     public static class StringExtensions {
         //
         // 摘要:
