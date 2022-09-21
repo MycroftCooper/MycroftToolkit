@@ -58,5 +58,16 @@ namespace MycroftToolkit.QuickCode {
             }
         }
 
+        public static void ForLoop(this int i, Action<int> callBack) {
+            for (int count = 0; count < i; count++) {
+                callBack(count);
+            }
+        }
+        public static void ForLoopInverted(this int i, Action<int> callBack) {
+            for (int count = i; count >= 0; count--) {
+                callBack(count);
+            }
+        }
+        
     }
 }

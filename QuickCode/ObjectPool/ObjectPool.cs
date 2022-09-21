@@ -1,88 +1,199 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using Sirenix.Utilities;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
-// todo: 学学这个 https://github.com/UnityPatterns/ObjectPool/blob/master/Assets/ObjectPool/Scripts/ObjectPool.cs
 namespace MycroftToolkit.QuickCode {
     public interface IPoolObject {
-        public IPoolObject InitPoolObject();
         public void OnTakeHandler();
         public void OnRecycleHandler();
+
+        public void OnDestroyHandler();
     }
-    
-    public class ObjectPoolData<TIPoolObject> where TIPoolObject: IPoolObject {
-        public Queue<TIPoolObject> UnusedPool = new Queue<TIPoolObject>();
-        public List<TIPoolObject> HasTakenPool = new List<TIPoolObject>();
-        
-        public int Size;
-        public int UnusedCount => UnusedPool.Count;
+
+    public class ObjectPoolData<TIPoolObject> where TIPoolObject : IPoolObject {
+        public Queue<TIPoolObject> UnTakenPool;
+        public List<TIPoolObject> HasTakenPool;
+
+        public readonly int DefaultSize;
+        public int Size =>UnTakenPool.Count + HasTakenPool.Count;
+        public int UnTakenCount => UnTakenPool.Count;
         public int HasTakenCount => HasTakenPool.Count;
 
-        public void Init(int size) {
+        /// <summary>
+        /// 是否为动态池
+        /// </summary>
+        public bool IsDynamic;
 
+        /// <summary>
+        /// 动态池阈值(百分比)
+        /// 可用对象比小于此值时扩展
+        /// </summary>
+        public float ExpandThresholdRate;
+
+        /// <summary>
+        /// 动态池增长率(百分比)
+        /// </summary>
+        public float ExpandRate;
+
+        /// <summary>
+        /// 动态池增长速率(每帧初始化个数)
+        /// 0为立刻全部初始化
+        /// </summary>
+        public int OnceMaxExpandCount;
+
+        public int ExpandThreshold => (int)(Size * ExpandThresholdRate);
+        public bool NeedExpand => UnTakenCount <= ExpandThreshold;
+
+        public int ExpandCount {
+            get {
+                if (OnceMaxExpandCount == 0) {
+                    return (int)(Size * ExpandRate);
+                }
+                return Math.Min((int)(Size * ExpandRate), OnceMaxExpandCount);
+            }
         }
+        
+        public delegate TIPoolObject InitPoolObject();
 
-        public TIPoolObject Take(int count = 1) {
-            return default;
-        }
+        public readonly InitPoolObject InitPoolObjectHandle;
 
-        public void Recycle() {
+        public ObjectPoolData(int size, InitPoolObject initPoolObjectHandle,
+            bool isDynamic = false, float expandThresholdRate = 1, float expandRate = 0.5f, int onceMaxExpandCount = 0) {
+            InitPoolObjectHandle = initPoolObjectHandle;
             
+            DefaultSize = size;
+            IsDynamic = isDynamic;
+            ExpandThresholdRate = expandThresholdRate;
+            ExpandRate = expandRate;
+            OnceMaxExpandCount = onceMaxExpandCount;
+
+            UnTakenPool = new Queue<TIPoolObject>();
+            HasTakenPool = new List<TIPoolObject>();
+        }
+
+        public bool ParameterCheck() {
+            bool output = true;
+            if (DefaultSize <= 0) {
+                Debug.LogError($"ObjectPool>InitError>对象池大小非法:{DefaultSize}");
+                output = false;   
+            }
+
+            if (InitPoolObjectHandle == null) {
+                Debug.LogError($"ObjectPool>InitError>对象生成函数指针为空");
+                output = false;
+            }
+            
+            if (ExpandThresholdRate <= 0 || ExpandThresholdRate > 1) {
+                Debug.LogError($"ObjectPool>InitError>对象池阈值非法:{ExpandThresholdRate},应当0<对象池阈值=<1");
+                output = false;
+            }
+
+            if (ExpandRate < 0) {
+                Debug.LogError($"ObjectPool>InitError>对象池增长率非法:{ExpandRate}");
+                output = false;
+            }
+            
+            if (OnceMaxExpandCount < 0) {
+                Debug.LogError($"ObjectPool>InitError>对象池增长速度非法:{OnceMaxExpandCount}");
+                output = false;
+            }
+            return output;
+        }
+    }
+
+    public abstract class PoolBase {
+        protected ObjectPoolData<IPoolObject> PoolData;
+        public abstract void Init(ObjectPoolData<IPoolObject> poolData);
+        public abstract IPoolObject Take();
+        public abstract bool Recycle(IPoolObject target);
+        
+        public List<IPoolObject> Take(int count) {
+            List<IPoolObject> output = new List<IPoolObject>(count);
+            for (int i = 0; i < count; i++) {
+                output.Add(Take());
+            }
+            return output;
+        }
+        public List<IPoolObject> GetAllTaken() {
+            List<IPoolObject> output = new List<IPoolObject>();
+            for (int i = PoolData.HasTakenCount; i >= 0; i--) {
+                if (PoolData.HasTakenPool[i] == null) {
+                    PoolData.HasTakenPool.RemoveAt(i);
+                    continue;
+                }
+                output.Add(PoolData.HasTakenPool[i]);
+            }
+
+            return output;
         }
         
         public void RecycleAll() {
-            
+            PoolData.HasTakenPool.ForEach((x)=>Recycle(x));
+            PoolData.HasTakenPool.Clear();
         }
 
         public void CleanPool() {
+            RecycleAll();
+            PoolData.UnTakenPool.ForEach((x) => x.OnDestroyHandler());
+            PoolData.UnTakenPool.Clear();
+        }
+
+        protected void AddNewPoolObject() {
+            PoolData.UnTakenPool.Enqueue(PoolData.InitPoolObjectHandle());
         }
     }
+
     
-    public class ObjectPool<T> where T : class, new() {
-        private Queue<T> _pool;
-        public int Size;
-        public int CanUseCount => _pool.Count;
-        public int UsingCount;
-        public bool InitPool(int size = 10) {
-            if (size < 1) {
-                Debug.LogError("对象池大小出错!");
+    public class ObjectPool : PoolBase {
+        public override void Init(ObjectPoolData<IPoolObject> poolData) {
+            if (!poolData.ParameterCheck()) return;
+            PoolData = poolData;
+
+            for (int i = 0; i < PoolData.DefaultSize; i++) {
+                AddNewPoolObject();
+            }
+        }
+
+        public override IPoolObject Take() {
+            if (PoolData.UnTakenCount == 0 && !PoolData.IsDynamic) {
+                return PoolData.InitPoolObjectHandle();
+            }
+
+            ExpandPool();
+
+            var output = PoolData.UnTakenPool.Dequeue();
+            PoolData.HasTakenPool.Add(output);
+            output.OnTakeHandler();
+            return output;
+        }
+
+        public override bool Recycle(IPoolObject target) {
+            if(target == null)return false;
+            bool canRemove = PoolData.HasTakenPool.Remove(target);
+            if (!canRemove) {
                 return false;
             }
-            _pool = new Queue<T>();
-            Size = size;
-            for (int i = 0; i < Size; i++) {
-                _pool.Enqueue(new T());
-            }
-            UsingCount = 0;
-            return true;
-        }
+            target.OnRecycleHandler();
 
-        public T GetObject(bool createIfPoolEmpty = true) {
-            if (_pool.Count != 0) { // 池子没空
-                var output = _pool.Dequeue();
-                UsingCount++;
-                return output;
-            }
-
-            if (!createIfPoolEmpty) return null; // 池子空了
-            UsingCount++;
-            return new T();
-        }
-
-        public bool Recycle(T obj) {
-            if (obj == null) return false;
-            UsingCount--;
-            if (_pool.Count >= Size) {
+            if (PoolData.IsDynamic && !PoolData.NeedExpand && PoolData.Size > PoolData.DefaultSize) {
+                target.OnDestroyHandler();
                 return true;
             }
-            _pool.Enqueue(obj);
+            PoolData.UnTakenPool.Enqueue(target);
             return true;
         }
-
-        public void CleanPool() {
-            while (_pool.Peek() != null) {
-                _pool.Dequeue();
+        
+        private void ExpandPool() {
+            if (!PoolData.IsDynamic || !PoolData.NeedExpand) {
+                return;
             }
-            UsingCount = 0;
+            int expandCount = PoolData.ExpandCount;
+            for (int i = 0; i < expandCount; i++) {
+                AddNewPoolObject();
+            }
         }
     }
 
