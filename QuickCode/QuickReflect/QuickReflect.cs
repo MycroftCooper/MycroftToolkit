@@ -220,7 +220,6 @@ namespace MycroftToolkit.QuickCode {
         }
         
         public static object RawCall(Type type, object obj, string methodName, object[] args, Type[] argsTypes, bool isStatic) {
-
             if (obj == null && !isStatic)
                 throw new ArgumentNullException(nameof(obj), "obj cannot be null for instance methods");
             if (type == null)
@@ -362,5 +361,18 @@ namespace MycroftToolkit.QuickCode {
             return (TResult)RawCall(type, null, methodName, args, argsTypes, true);
         }
         #endregion
+        
+        public static T DeepCopy<T>(this T obj) {
+            if (obj is string || obj.GetType().IsValueType){ //如果是字符串或值类型则直接返回
+                return obj;
+            }
+
+            object output = Activator.CreateInstance(obj.GetType());
+            FieldInfo[] fields = obj.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            foreach (FieldInfo field in fields) {
+                field.SetValue(output, DeepCopy(field.GetValue(obj)));
+            }
+            return (T)output;
+        }
      }
 }

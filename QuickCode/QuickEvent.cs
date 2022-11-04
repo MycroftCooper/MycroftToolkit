@@ -6,7 +6,7 @@ namespace MycroftToolkit.QuickCode {
     public class QuickEvent : Singleton<QuickEvent> {
         public delegate void EventHandle<in T>(T message) where T : struct;
 
-        private readonly Dictionary<Type, Delegate> _delegateDict = new();
+        private readonly Dictionary<Type, Delegate> _delegateDict = new Dictionary<Type, Delegate>();
 
         public void SubscribeListener<T>(EventHandle<T> handle) where T : struct {
             if (handle == null) {
