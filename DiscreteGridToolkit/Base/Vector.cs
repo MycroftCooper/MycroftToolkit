@@ -116,9 +116,38 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         public static Vector2Int SwapXY(this Vector2Int v2) {
             return new Vector2Int(v2.y, v2.x);
         }
-        
-
         #endregion
+
+        public static Vector3 SetX(this Vector3 v3, float x) {
+            return new Vector3(x, v3.y, v3.z);
+        }
+        public static Vector3 SetY(this Vector3 v3, float y) {
+            return new Vector3(v3.x, y, v3.z);
+        }
+        public static Vector3 SetZ(this Vector3 v3, float z) {
+            return new Vector3(v3.x, v3.y, v3.z);
+        }
+        public static Vector2 SetX(this Vector2 v2, float x) {
+            return new Vector2(x, v2.y);
+        }
+        public static Vector2 SetY(this Vector2 v2, float y) {
+            return new Vector2(v2.x, y);
+        }
+        public static Vector3Int SetX(this Vector3Int v3, int x) {
+            return new Vector3Int(x, v3.y, v3.z);
+        }
+        public static Vector3Int SetY(this Vector3Int v3, int y) {
+            return new Vector3Int(v3.x, y, v3.z);
+        }
+        public static Vector3Int SetZ(this Vector3Int v3, int z) {
+            return new Vector3Int(v3.x, v3.y, v3.z);
+        }
+        public static Vector2Int SetX(this Vector2Int v2, int x) {
+            return new Vector2Int(x, v2.y);
+        }
+        public static Vector2Int SetY(this Vector2Int v2, int y) {
+            return new Vector2Int(v2.x, y);
+        }
 
         public static float ToAngle(this Vector2 dir) {
             return Vector2.SignedAngle(Vector2.right, dir);
