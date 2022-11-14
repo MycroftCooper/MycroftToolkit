@@ -24,9 +24,9 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
 
     private void Update() {
         if (Input.GetMouseButtonDown((int)MouseButton.LeftMouse)) {
-            DrawSpiral();
+            DrawSpiral3();
         }else if (Input.GetMouseButtonDown((int)MouseButton.RightMouse)) {
-            DrawSpiral2();
+            DrawSpiral4();
         }else if (Input.GetMouseButtonDown((int)MouseButton.MiddleMouse)) {
             _spiralPointList.Clear();
             _lineRenderer.positionCount = 0;
@@ -51,11 +51,42 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
 
     private void DrawSpiral2() {
         _spiralPointList.Clear();
+        Vector3 center = transform.Find("center").position;
         Vector3 p1 = transform.Find("p1").position;
         Vector3 p2 = transform.Find("p2").position;
         float t = 0;
         while (t <= 1) {
-            Vector3 targetPos = Geometry.ArchimedeanSpiralLerp(Vector3.zero, p1,p2, t);
+            Vector3 targetPos = Geometry.ArchimedeanSpiralLerp(center, p1,p2, t);
+            targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
+            _spiralPointList.Add(targetPos);
+            t += intervalAngle;
+        }
+        _lineRenderer.positionCount = _spiralPointList.Count;
+        _lineRenderer.SetPositions(_spiralPointList.ToArray());
+    }
+    
+    private void DrawSpiral3() {
+        _spiralPointList.Clear();
+        Vector3 center = transform.Find("center").position;
+        float t = 0;
+        while (t <= 1) {
+            Vector3 targetPos = Geometry.CircularSpiralLerp(center,1,10, 0,3600, t);
+            targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
+            _spiralPointList.Add(targetPos);
+            t += intervalAngle;
+        }
+        _lineRenderer.positionCount = _spiralPointList.Count;
+        _lineRenderer.SetPositions(_spiralPointList.ToArray());
+    }
+    
+    private void DrawSpiral4() {
+        _spiralPointList.Clear();
+        Vector3 center = transform.Find("center").position;
+        Vector3 p1 = transform.Find("p1").position;
+        Vector3 p2 = transform.Find("p2").position;
+        float t = 0;
+        while (t <= 1) {
+            Vector3 targetPos = Geometry.CircularSpiralLerp(1, p1,p2, t);
             targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
             _spiralPointList.Add(targetPos);
             t += intervalAngle;

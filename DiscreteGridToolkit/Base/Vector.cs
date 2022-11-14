@@ -125,7 +125,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             return new Vector3(v3.x, y, v3.z);
         }
         public static Vector3 SetZ(this Vector3 v3, float z) {
-            return new Vector3(v3.x, v3.y, v3.z);
+            return new Vector3(v3.x, v3.y, z);
         }
         public static Vector2 SetX(this Vector2 v2, float x) {
             return new Vector2(x, v2.y);
@@ -140,7 +140,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             return new Vector3Int(v3.x, y, v3.z);
         }
         public static Vector3Int SetZ(this Vector3Int v3, int z) {
-            return new Vector3Int(v3.x, v3.y, v3.z);
+            return new Vector3Int(v3.x, v3.y, z);
         }
         public static Vector2Int SetX(this Vector2Int v2, int x) {
             return new Vector2Int(x, v2.y);

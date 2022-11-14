@@ -51,6 +51,58 @@ namespace MycroftToolkit.MathTool {
             return output;
         }
 
+        public static Vector2 GetCircleCenter(Vector2 p1, Vector2 p2, float r) {
+            if (Vector2.Distance(p1, p2) > r * 2) {
+                Debug.LogError($"MathTool>Geometry>Error> 点A{p1.ToString()}与点{p2.ToString()}构成的弦长大于直径：{r*2}");
+                return default;
+            }
+            float c1 = (p2.x*p2.x - p1.x*p1.x + p2.y*p2.y - p1.y*p1.y) / (2 *(p2.x - p1.x));  
+            float c2 = (p2.y - p1.y) / (p2.x - p1.x);  //斜率
+            float a = (c2*c2 + 1);  
+            float b = (2 * p1.x*c2 - 2 * c1*c2 - 2 * p1.y);  
+            float c = p1.x*p1.x - 2 * p1.x*c1 + c1*c1 + p1.y*p1.y - r*r;
+            float y = (-b + Mathf.Sqrt(b*b - 4 * a*c)) / (2 * a);
+            float x = c1 - c2 * y;
+            return new Vector2(x, y);
+        }
+        
+        /// <summary>
+        /// 圆柱螺旋曲线插值
+        /// </summary>
+        /// <param name="centerPos">中心点坐标</param>
+        /// <param name="r">半径</param>
+        /// <param name="h">高度(z轴)</param>
+        /// <param name="startTheta">起始角度</param>
+        /// <param name="endTheta">结束角度</param>
+        /// <param name="t">插值</param>
+        public static Vector3 CircularSpiralLerp(Vector3 centerPos, float r, float h,float startTheta, float endTheta, float t) {
+            float angle = Mathf.Lerp(startTheta, endTheta, t);
+            float z = Mathf.Lerp(0,h,t); 
+            Polar2 polar2 = new Polar2(r, angle);
+            Vector3 vector3 = polar2.ToVector2().ToVec3().SetZ(z);
+            Vector3 result =centerPos + vector3;
+            return result;
+        }
+        
+        /// <summary>
+        /// 圆柱螺旋曲线插值
+        /// </summary>
+        /// <param name="r">半径</param>
+        /// <param name="startPos">起始点</param>
+        /// <param name="endPos">结束点</param>
+        /// <param name="t">插值</param>
+        public static Vector3 CircularSpiralLerp(float r, Vector3 startPos, Vector3 endPos, float t) {
+            var h = endPos.z - startPos.z;
+            Vector2 centerPos = GetCircleCenter(startPos.ToVec2(), endPos.ToVec2(), r);
+            Vector2 p1 = startPos.ToVec2() - centerPos;
+            Vector2 p2 = endPos.ToVec2() - centerPos;
+            float theta1 = p1.DirToAngle();
+            float theta2 = p2.DirToAngle();
+            
+            Vector3 result = CircularSpiralLerp(Vector3.zero, r,h,theta1,theta2,t)+centerPos.ToVec3();
+            return result;
+        }
+
         /// <summary>
         /// 阿基米德螺旋曲线插值
         /// r = a + bθ
@@ -70,7 +122,7 @@ namespace MycroftToolkit.MathTool {
             float x = (a + b * rad) * Mathf.Cos(rad);
             float y = (a + b * rad) * Mathf.Sin(rad);
             //Z值增量
-            float z = h * t; 
+            float z = Mathf.Lerp(0,h,t); 
             Vector3 result = new Vector3(x, y, z);
             return centerPos + result;
         }
@@ -84,7 +136,6 @@ namespace MycroftToolkit.MathTool {
         /// <param name="t">插值</param>
         public static Vector3 ArchimedeanSpiralLerp(Vector3 centerPos, Vector3 startPos, Vector3 endPos, float t) {
             var h = endPos.z - startPos.z;
-            
             Vector2 p1 = startPos - centerPos;
             Vector2 p2 = endPos - centerPos;
 
@@ -95,7 +146,6 @@ namespace MycroftToolkit.MathTool {
             if (Math.Abs(theta1 - theta2) < float.Epsilon) {
                 theta2 += 360*Mathf.Deg2Rad;
             }
-
             
             var b = (r1 - r2) / (theta1 - theta2);
             var a = r1 - theta1 * b;
