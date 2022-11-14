@@ -76,7 +76,7 @@ namespace MycroftToolkit.MathTool {
         }
         
         /// <summary>
-        /// 阿基米德螺旋曲线插值
+        /// 阿基米德螺旋曲线插值(最短路径)
         /// </summary>
         /// <param name="centerPos">中心点</param>
         /// <param name="startPos">起始点</param>
@@ -92,6 +92,9 @@ namespace MycroftToolkit.MathTool {
             var r2 = Vector2.Distance(Vector2.zero, p2);
             var theta1 = p1.DirToAngle()*Mathf.Deg2Rad;
             var theta2 = p2.DirToAngle()*Mathf.Deg2Rad;
+            if (Math.Abs(theta1 - theta2) < float.Epsilon) {
+                theta2 += 360*Mathf.Deg2Rad;
+            }
 
             
             var b = (r1 - r2) / (theta1 - theta2);
