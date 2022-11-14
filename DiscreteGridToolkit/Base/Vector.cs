@@ -149,16 +149,27 @@ namespace MycroftToolkit.DiscreteGridToolkit {
             return new Vector2Int(v2.x, y);
         }
 
-        public static float ToAngle(this Vector2 dir) {
+        public static float DirToAngle(this Vector2 dir) {
             return Vector2.SignedAngle(Vector2.right, dir);
         }
         
-        public static float ToAngle(this Vector3 dir) {
+        public static float DirToAngle(this Vector3 dir) {
             return Vector3.SignedAngle(Vector3.right, dir, Vector3.forward);
         }
 
         public static Vector2 AngleToDir(float angle) {
             return new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad)).normalized;
+        }
+        
+        /// <summary>
+        /// 围绕某点旋转指定角度
+        /// </summary>
+        /// <param name="v3">自身坐标</param>
+        /// <param name="center">旋转中心</param>
+        /// <param name="axis">围绕旋转轴</param>
+        /// <param name="angle">旋转角度</param>
+        public static Vector3 Rotate(this Vector3 v3, Vector3 center, Vector3 axis, float angle) {
+            return Quaternion.AngleAxis(angle, axis) * (v3 - center) + center;
         }
     }
 }

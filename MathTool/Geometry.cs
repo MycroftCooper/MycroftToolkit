@@ -1,10 +1,10 @@
 using System;
+using MycroftToolkit.DiscreteGridToolkit;
 using UnityEngine;
 
 namespace MycroftToolkit.MathTool {
     public static class Geometry {
         public enum Relation { In, On, Out }
-
         public static Relation GetPointCircleRelation(Vector2 pos, Vector2 circleCenter, float radius) {
             float d = Vector2.Distance(pos, circleCenter);
             Relation output;
@@ -48,6 +48,56 @@ namespace MycroftToolkit.MathTool {
                 posToCenter.x * Mathf.Sin(-angle) + posToCenter.y * Mathf.Cos(-angle));
             output[0] = (output[0] + pos) * l;
             output[1] = (output[1] + pos) * l;
+            return output;
+        }
+
+        /// <summary>
+        /// 阿基米德螺旋曲线插值
+        /// r = a + bθ
+        /// 平面笛卡尔坐标方程式为: x = (a + bθ)cos(θ), y = (a + bθ)sin(θ)
+        /// </summary>
+        /// <param name="centerPos">中心点坐标</param>
+        /// <param name="h">螺旋线高度</param>
+        /// <param name="a">当θ=0°时的极径，将改变螺线形状</param>
+        /// <param name="b">螺旋线系数,表示每旋转1度时极径的增加/减小量，控制螺线间距离</param>
+        /// <param name="startTheta">极角,单位为度,表示阿基米德螺旋线开始转的度数</param>
+        /// <param name="endTheta">极角,单位为度,表示阿基米德螺旋线转过的总度数</param>
+        /// <param name="t">插值</param>
+        public static Vector3 ArchimedeanSpiralLerp(Vector3 centerPos,float h, float a, float b,float startTheta, float endTheta, float t) {
+            float angle = Mathf.Lerp(startTheta, endTheta, t);
+            float rad = Mathf.Deg2Rad*angle;
+            //公式计算坐标
+            float x = (a + b * rad) * Mathf.Cos(rad);
+            float y = (a + b * rad) * Mathf.Sin(rad);
+            //Z值增量
+            float z = h * t; 
+            Vector3 result = new Vector3(x, y, z);
+            return centerPos + result;
+        }
+        
+        /// <summary>
+        /// 阿基米德螺旋曲线插值
+        /// </summary>
+        /// <param name="centerPos">中心点</param>
+        /// <param name="startPos">起始点</param>
+        /// <param name="endPos">结束点</param>
+        /// <param name="t">插值</param>
+        public static Vector3 ArchimedeanSpiralLerp(Vector3 centerPos, Vector3 startPos, Vector3 endPos, float t) {
+            var h = endPos.z - startPos.z;
+            
+            Vector2 p1 = startPos - centerPos;
+            Vector2 p2 = endPos - centerPos;
+
+            var r1 = Vector2.Distance(Vector2.zero, p1);
+            var r2 = Vector2.Distance(Vector2.zero, p2);
+            var theta1 = p1.DirToAngle()*Mathf.Deg2Rad;
+            var theta2 = p2.DirToAngle()*Mathf.Deg2Rad;
+
+            
+            var b = (r1 - r2) / (theta1 - theta2);
+            var a = r1 - theta1 * b;
+
+            Vector3 output = ArchimedeanSpiralLerp(Vector3.zero, h,a,b,theta1*Mathf.Rad2Deg,theta2*Mathf.Rad2Deg,t)+centerPos;
             return output;
         }
     }
