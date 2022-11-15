@@ -46,8 +46,8 @@ namespace MycroftToolkit.MathTool {
             output[1] = new Vector2(
                 posToCenter.x * Mathf.Cos(-angle) - posToCenter.y * Mathf.Sin(-angle),
                 posToCenter.x * Mathf.Sin(-angle) + posToCenter.y * Mathf.Cos(-angle));
-            output[0] = (output[0] + pos) * l;
-            output[1] = (output[1] + pos) * l;
+            output[0] = output[0] * l+ pos;
+            output[1] = output[1] * l+ pos;
             return output;
         }
 

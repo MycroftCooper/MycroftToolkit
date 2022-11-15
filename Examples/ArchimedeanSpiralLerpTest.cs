@@ -70,7 +70,7 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
         Vector3 center = transform.Find("center").position;
         float t = 0;
         while (t <= 1) {
-            Vector3 targetPos = Geometry.CircularSpiralLerp(center,1,10, 0,3600, t);
+            Vector3 targetPos = Geometry.CircularSpiralLerp(center,1,0, 0,360, t);
             targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
             _spiralPointList.Add(targetPos);
             t += intervalAngle;
