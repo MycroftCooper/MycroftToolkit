@@ -39,7 +39,7 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
         //隔固定角度取样
         float t = 0;
         while (t <= 1) {
-            Vector3 targetPos = Geometry.ArchimedeanSpiralLerp(center, height, a, b, 0,theta, t);
+            Vector3 targetPos = LerpExtensions.ArchimedeanSpiralLerp(center, height, a, b, 0,theta, t);
             targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
             _spiralPointList.Add(targetPos);
             t += intervalAngle;
@@ -56,7 +56,7 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
         Vector3 p2 = transform.Find("p2").position;
         float t = 0;
         while (t <= 1) {
-            Vector3 targetPos = Geometry.ArchimedeanSpiralLerp(center, p1,p2, t);
+            Vector3 targetPos = LerpExtensions.ArchimedeanSpiralLerp(center, p1,p2, t);
             targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
             _spiralPointList.Add(targetPos);
             t += intervalAngle;
@@ -70,7 +70,7 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
         Vector3 center = transform.Find("center").position;
         float t = 0;
         while (t <= 1) {
-            Vector3 targetPos = Geometry.CircularSpiralLerp(center,1,0, 0,360, t);
+            Vector3 targetPos = LerpExtensions.CircularSpiralLerp(center,1,0, 0,360, t);
             targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
             _spiralPointList.Add(targetPos);
             t += intervalAngle;
@@ -86,7 +86,7 @@ public class ArchimedeanSpiralLerpTest : MonoBehaviour {
         Vector3 p2 = transform.Find("p2").position;
         float t = 0;
         while (t <= 1) {
-            Vector3 targetPos = Geometry.CircularSpiralLerp(1, p1,p2, t);
+            Vector3 targetPos = LerpExtensions.CircularSpiralLerp(1, p1,p2, t);
             targetPos = targetPos.Rotate(Vector3.zero, Vector3.back, rotateAngle);
             _spiralPointList.Add(targetPos);
             t += intervalAngle;

@@ -171,5 +171,46 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         public static Vector3 Rotate(this Vector3 v3, Vector3 center, Vector3 axis, float angle) {
             return Quaternion.AngleAxis(angle, axis) * (v3 - center) + center;
         }
+        
+        /// <summary>
+        /// 围绕某点旋转指定角度
+        /// </summary>
+        /// <param name="v2">自身坐标</param>
+        /// <param name="center">旋转中心</param>
+        /// <param name="angle">旋转角度</param>
+        public static Vector2 Rotate(this Vector2 v2, Vector2 center, float angle) {
+            return (Quaternion.AngleAxis(angle, Vector3.back) * (v2 - center)).ToVec2() + center;
+        }
+
+        public static Vector2 GetNormal(this Vector2 v2, bool isClockwise = true) {
+            float angle = isClockwise ? 90f : -90f;
+            return v2.Rotate(Vector2.zero, angle).normalized;
+        }
+        
+        /// <summary>
+        /// 获取向量的垂直向量
+        /// </summary>
+        public static Vector3 GetVerticalDir(this Vector3 dir) {
+            if (dir.x == 0) {
+                return new Vector3(1, 0, 0);
+            }
+            return new Vector3(-dir.z / dir.x, 0, 1).normalized;
+        }
+
+        /// <summary>
+        /// 获取向量的垂直向量
+        /// </summary>
+        public static (Vector2 up, Vector2 down) GetVerticalDir(this Vector2 dir) {
+            Vector2 up, down;
+            if (dir.x == 0) {
+                up = new Vector2(dir.y, 0);
+                down = new Vector2(-dir.y, 0);
+            }
+            else {
+                up = new Vector2(-dir.y / dir.x, 1);
+                down = new Vector2(dir.y / dir.x, -1);
+            }
+            return (up, down);
+        }
     }
 }
