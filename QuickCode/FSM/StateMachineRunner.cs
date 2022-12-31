@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace MycroftToolkit.QuickTool.FSM {
     public class StateMachineRunner : MonoBehaviour {
-        private List<IStateMachine<StateDriverRunner>> stateMachineList = new List<IStateMachine<StateDriverRunner>>();
+        private List<IStateMachine<StateDriverRunner>> _stateMachineList = new ();
 
         /// <summary>
         /// 创建一个管理Mono的状态机
@@ -17,7 +17,7 @@ namespace MycroftToolkit.QuickTool.FSM {
         public StateMachine<TState> Initialize<TState>(MonoBehaviour component) where TState : struct, IConvertible, IComparable {
             var fsm = new StateMachine<TState>(component);
 
-            stateMachineList.Add(fsm);
+            _stateMachineList.Add(fsm);
 
             return fsm;
         }
@@ -38,17 +38,17 @@ namespace MycroftToolkit.QuickTool.FSM {
         }
 
         void FixedUpdate() {
-            for (int i = 0; i < stateMachineList.Count; i++) {
-                var fsm = stateMachineList[i];
+            foreach (var fsm in _stateMachineList) {
                 if (!fsm.IsInTransition && fsm.Component.enabled) {
                     fsm.Driver.FixedUpdate.Invoke();
                 }
             }
         }
 
-        void Update() {
-            for (int i = 0; i < stateMachineList.Count; i++) {
-                var fsm = stateMachineList[i];
+        void Update()
+        {
+            foreach (var fsm in _stateMachineList)
+            {
                 if (!fsm.IsInTransition && fsm.Component.enabled) {
                     fsm.Driver.Update.Invoke();
                 }
@@ -56,8 +56,8 @@ namespace MycroftToolkit.QuickTool.FSM {
         }
 
         void LateUpdate() {
-            for (int i = 0; i < stateMachineList.Count; i++) {
-                var fsm = stateMachineList[i];
+            for (int i = 0; i < _stateMachineList.Count; i++) {
+                var fsm = _stateMachineList[i];
                 if (!fsm.IsInTransition && fsm.Component.enabled) {
                     fsm.Driver.LateUpdate.Invoke();
                 }

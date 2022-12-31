@@ -26,34 +26,34 @@ namespace MycroftToolkit.QuickTool.FSM {
     public class StateMachine<TState, TDriver> : IStateMachine<TDriver> where TState : struct, IConvertible, IComparable where TDriver : class, new() {
         public event Action<TState> Changed;
 
-        public bool reenter = false;
-        private MonoBehaviour component;
+        public bool Reenter = false;
+        private MonoBehaviour _component;
 
-        private StateMapping<TState, TDriver> lastState;
-        private StateMapping<TState, TDriver> currentState;
-        private StateMapping<TState, TDriver> destinationState;
-        private StateMapping<TState, TDriver> queuedState;
-        private TDriver rootDriver;
+        private StateMapping<TState, TDriver> _lastState;
+        private StateMapping<TState, TDriver> _currentState;
+        private StateMapping<TState, TDriver> _destinationState;
+        private StateMapping<TState, TDriver> _queuedState;
+        private TDriver _rootDriver;
 
-        private Dictionary<object, StateMapping<TState, TDriver>> stateLookup;
-        private Func<TState, int> enumConverter;
+        private Dictionary<object, StateMapping<TState, TDriver>> _stateLookup;
+        private Func<TState, int> _enumConverter;
 
-        private bool isInTransition = false;
-        private IEnumerator currentTransition;
-        private IEnumerator exitRoutine;
-        private IEnumerator enterRoutine;
-        private IEnumerator queuedChange;
+        private bool _isInTransition;
+        private IEnumerator _currentTransition;
+        private IEnumerator _exitRoutine;
+        private IEnumerator _enterRoutine;
+        private IEnumerator _queuedChange;
 
-        private static BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags BindingFlags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
 
         #region Initialization
 
         public StateMachine(MonoBehaviour component) {
-            this.component = component;
+            _component = component;
 
             //Compiler shenanigans to get ints from generic enums
             Func<int, int> identity = Identity;
-            enumConverter = Delegate.CreateDelegate(typeof(Func<TState, int>), identity.Method) as Func<TState, int>;
+            _enumConverter = Delegate.CreateDelegate(typeof(Func<TState, int>), identity.Method) as Func<TState, int>;
 
             //Define States
             var enumValues = Enum.GetValues(typeof(TState));
@@ -80,13 +80,13 @@ namespace MycroftToolkit.QuickTool.FSM {
             // driver = new Driver();
             // for each StateEvent:
             //   StateEvent foo = new StateEvent(isAllowed, getStateInt, capacity);
-            rootDriver = CreateDriver(IsDispatchAllowed, GetStateInt, enumValues.Length, eventFields);
+            _rootDriver = CreateDriver(IsDispatchAllowed, GetStateInt, enumValues.Length, eventFields);
 
             // Create a state mapping for each state defined in the enum
-            stateLookup = CreateStateLookup(this, enumValues);
+            _stateLookup = CreateStateLookup(this, enumValues);
 
             //Collect methods in target component
-            MethodInfo[] methods = component.GetType().GetMethods(bindingFlags);
+            MethodInfo[] methods = component.GetType().GetMethods(BindingFlags);
 
             //Bind methods to states
             for (int i = 0; i < methods.Length; i++) {
@@ -96,13 +96,13 @@ namespace MycroftToolkit.QuickTool.FSM {
                     continue; //Skip methods where State_Event name convention could not be parsed
                 }
 
-                StateMapping<TState, TDriver> mapping = stateLookup[state];
+                StateMapping<TState, TDriver> mapping = _stateLookup[state];
 
                 if (eventFieldsLookup.ContainsKey(evtName)) {
                     //Bind methods defined in TDriver
                     // driver.Foo.AddListener(StateOne_Foo);
                     FieldInfo eventField = eventFieldsLookup[evtName];
-                    BindEvents(rootDriver, component, state, enumConverter(state), methods[i], eventField);
+                    BindEvents(_rootDriver, component, state, _enumConverter(state), methods[i], eventField);
                 } else {
                     //Bind Enter, Exit and Finally Methods
                     BindEventsInternal(mapping, component, methods[i], evtName);
@@ -110,13 +110,13 @@ namespace MycroftToolkit.QuickTool.FSM {
             }
 
             //Create nil state mapping
-            currentState = null;
+            _currentState = null;
         }
 
         static List<FieldInfo> GetFilteredFields(Type type, string searchTerm) {
             List<FieldInfo> list = new List<FieldInfo>();
 
-            FieldInfo[] fields = type.GetFields(bindingFlags);
+            FieldInfo[] fields = type.GetFields(BindingFlags);
 
             for (int i = 0; i < fields.Length; i++) {
                 FieldInfo item = fields[i];
@@ -206,7 +206,7 @@ namespace MycroftToolkit.QuickTool.FSM {
 
             //evt.AddListener(State_Method); 
             var obj = driverEvtDef.GetValue(driver); //driver.Foo
-            var addMethodInfo = driverEvtDef.FieldType.GetMethod("AddListener", bindingFlags); // driver.Foo.AddListener
+            var addMethodInfo = driverEvtDef.FieldType.GetMethod("AddListener", BindingFlags); // driver.Foo.AddListener
 
             Delegate del = null;
             try {
@@ -279,24 +279,24 @@ namespace MycroftToolkit.QuickTool.FSM {
         }
 
         public void ChangeState(TState newState, StateTransition transition) {
-            if (stateLookup == null) {
+            if (_stateLookup == null) {
                 throw new Exception("States have not been configured, please call initialized before trying to set state");
             }
 
-            if (!stateLookup.ContainsKey(newState)) {
+            if (!_stateLookup.ContainsKey(newState)) {
                 throw new Exception("No state with the name " + newState.ToString() + " can be found. Please make sure you are called the correct type the statemachine was initialized with");
             }
 
-            var nextState = stateLookup[newState];
+            var nextState = _stateLookup[newState];
 
-            if (!reenter && currentState == nextState) {
+            if (!Reenter && _currentState == nextState) {
                 return;
             }
 
             //Cancel any queued changes.
-            if (queuedChange != null) {
-                component.StopCoroutine(queuedChange);
-                queuedChange = null;
+            if (_queuedChange != null) {
+                _component.StopCoroutine(_queuedChange);
+                _queuedChange = null;
             }
 
             switch (transition) {
@@ -307,35 +307,35 @@ namespace MycroftToolkit.QuickTool.FSM {
                 //Is there a way to make this safe, I don't think so? 
                 //break;
                 case StateTransition.Safe:
-                    if (isInTransition) {
-                        if (exitRoutine != null) //We are already exiting current state on our way to our previous target state
+                    if (_isInTransition) {
+                        if (_exitRoutine != null) //We are already exiting current state on our way to our previous target state
                         {
                             //Overwrite with our new target
-                            destinationState = nextState;
+                            _destinationState = nextState;
                             return;
                         }
 
-                        if (enterRoutine != null) //We are already entering our previous target state. Need to wait for that to finish and call the exit routine.
+                        if (_enterRoutine != null) //We are already entering our previous target state. Need to wait for that to finish and call the exit routine.
                         {
                             //Damn, I need to test this hard
-                            queuedChange = WaitForPreviousTransition(nextState);
-                            component.StartCoroutine(queuedChange);
+                            _queuedChange = WaitForPreviousTransition(nextState);
+                            _component.StartCoroutine(_queuedChange);
                             return;
                         }
                     }
 
                     break;
                 case StateTransition.Overwrite:
-                    if (currentTransition != null) {
-                        component.StopCoroutine(currentTransition);
+                    if (_currentTransition != null) {
+                        _component.StopCoroutine(_currentTransition);
                     }
 
-                    if (exitRoutine != null) {
-                        component.StopCoroutine(exitRoutine);
+                    if (_exitRoutine != null) {
+                        _component.StopCoroutine(_exitRoutine);
                     }
 
-                    if (enterRoutine != null) {
-                        component.StopCoroutine(enterRoutine);
+                    if (_enterRoutine != null) {
+                        _component.StopCoroutine(_enterRoutine);
                     }
 
                     //Note: if we are currently in an EnterRoutine and Exit is also a routine, this will be skipped in ChangeToNewStateRoutine()
@@ -343,85 +343,85 @@ namespace MycroftToolkit.QuickTool.FSM {
             }
 
 
-            if ((currentState != null && currentState.hasExitRoutine) || nextState.hasEnterRoutine) {
-                isInTransition = true;
-                currentTransition = ChangeToNewStateRoutine(nextState, transition);
-                component.StartCoroutine(currentTransition);
+            if ((_currentState != null && _currentState.hasExitRoutine) || nextState.hasEnterRoutine) {
+                _isInTransition = true;
+                _currentTransition = ChangeToNewStateRoutine(nextState, transition);
+                _component.StartCoroutine(_currentTransition);
             } else //Same frame transition, no coroutines are present
               {
-                destinationState = nextState; //Assign here so Exit() has a valid reference
+                _destinationState = nextState; //Assign here so Exit() has a valid reference
 
-                if (currentState != null) {
-                    currentState.ExitCall();
-                    currentState.Finally();
+                if (_currentState != null) {
+                    _currentState.ExitCall();
+                    _currentState.Finally();
                 }
 
-                lastState = currentState;
-                currentState = destinationState;
-                if (currentState != null) {
-                    currentState.EnterCall();
+                _lastState = _currentState;
+                _currentState = _destinationState;
+                if (_currentState != null) {
+                    _currentState.EnterCall();
                     if (Changed != null) {
-                        Changed((TState)currentState.state);
+                        Changed((TState)_currentState.state);
                     }
                 }
 
-                isInTransition = false;
+                _isInTransition = false;
             }
         }
 
         private IEnumerator ChangeToNewStateRoutine(StateMapping<TState, TDriver> newState, StateTransition transition) {
-            destinationState = newState; //Cache this so that we can overwrite it and hijack a transition
+            _destinationState = newState; //Cache this so that we can overwrite it and hijack a transition
 
-            if (currentState != null) {
-                if (currentState.hasExitRoutine) {
-                    exitRoutine = currentState.ExitRoutine();
+            if (_currentState != null) {
+                if (_currentState.hasExitRoutine) {
+                    _exitRoutine = _currentState.ExitRoutine();
 
-                    if (exitRoutine != null && transition != StateTransition.Overwrite) //Don't wait for exit if we are overwriting
+                    if (_exitRoutine != null && transition != StateTransition.Overwrite) //Don't wait for exit if we are overwriting
                     {
-                        yield return component.StartCoroutine(exitRoutine);
+                        yield return _component.StartCoroutine(_exitRoutine);
                     }
 
-                    exitRoutine = null;
+                    _exitRoutine = null;
                 } else {
-                    currentState.ExitCall();
+                    _currentState.ExitCall();
                 }
 
-                currentState.Finally();
+                _currentState.Finally();
             }
 
-            lastState = currentState;
-            currentState = destinationState;
+            _lastState = _currentState;
+            _currentState = _destinationState;
 
-            if (currentState != null) {
-                if (currentState.hasEnterRoutine) {
-                    enterRoutine = currentState.EnterRoutine();
+            if (_currentState != null) {
+                if (_currentState.hasEnterRoutine) {
+                    _enterRoutine = _currentState.EnterRoutine();
 
-                    if (enterRoutine != null) {
-                        yield return component.StartCoroutine(enterRoutine);
+                    if (_enterRoutine != null) {
+                        yield return _component.StartCoroutine(_enterRoutine);
                     }
 
-                    enterRoutine = null;
+                    _enterRoutine = null;
                 } else {
-                    currentState.EnterCall();
+                    _currentState.EnterCall();
                 }
 
                 //Broadcast change only after enter transition has begun. 
                 if (Changed != null) {
-                    Changed((TState)currentState.state);
+                    Changed((TState)_currentState.state);
                 }
             }
 
-            isInTransition = false;
+            _isInTransition = false;
         }
 
         IEnumerator WaitForPreviousTransition(StateMapping<TState, TDriver> nextState) {
-            queuedState = nextState; //Cache this so fsm.NextState is accurate;
+            _queuedState = nextState; //Cache this so fsm.NextState is accurate;
 
-            while (isInTransition) {
+            while (_isInTransition) {
                 yield return null;
             }
 
-            queuedState = null;
+            _queuedState = null;
             ChangeState((TState)nextState.state);
         }
 
@@ -430,54 +430,54 @@ namespace MycroftToolkit.QuickTool.FSM {
         #region Properties & Helpers
 
         public bool LastStateExists {
-            get { return lastState != null; }
+            get { return _lastState != null; }
         }
 
         public TState LastState {
             get {
-                if (lastState == null) {
+                if (_lastState == null) {
                     throw new NullReferenceException("LastState cannot be accessed before ChangeState() has been called at least twice");
                 }
 
-                return (TState)lastState.state;
+                return (TState)_lastState.state;
             }
         }
 
         public TState NextState {
             get {
-                if (queuedState != null) //In safe mode sometimes we need to wait for the destination state to complete, and will be stored in queued state
+                if (_queuedState != null) //In safe mode sometimes we need to wait for the destination state to complete, and will be stored in queued state
                 {
-                    return (TState)queuedState.state;
+                    return (TState)_queuedState.state;
                 }
 
-                if (destinationState == null) {
+                if (_destinationState == null) {
                     return State;
                 }
 
-                return (TState)destinationState.state;
+                return (TState)_destinationState.state;
             }
         }
 
         public TState State {
             get {
-                if (currentState == null) {
+                if (_currentState == null) {
                     throw new NullReferenceException("State cannot be accessed before ChangeState() has been called at least once");
                 }
 
-                return (TState)currentState.state;
+                return (TState)_currentState.state;
             }
         }
 
         public bool IsInTransition {
-            get { return isInTransition; }
+            get { return _isInTransition; }
         }
 
         public TDriver Driver {
-            get { return rootDriver; }
+            get { return _rootDriver; }
         }
 
         public MonoBehaviour Component {
-            get { return component; }
+            get { return _component; }
         }
 
         //format as method so can be passed as Func<TState>
@@ -486,7 +486,7 @@ namespace MycroftToolkit.QuickTool.FSM {
         }
 
         private int GetStateInt() {
-            return enumConverter(State);
+            return _enumConverter(State);
         }
 
         //Compiler shenanigans to get ints from generic enums
@@ -495,7 +495,7 @@ namespace MycroftToolkit.QuickTool.FSM {
         }
 
         private bool IsDispatchAllowed() {
-            if (currentState == null) {
+            if (_currentState == null) {
                 return false;
             }
 

@@ -64,7 +64,5 @@ namespace MycroftToolkit.MathTool {
             float x = c1 - c2 * y;
             return new Vector2(x, y);
         }
-        
-        
     }
 }

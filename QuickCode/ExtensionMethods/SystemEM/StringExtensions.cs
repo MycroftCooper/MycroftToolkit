@@ -4,9 +4,7 @@ using System.Text;
 
 namespace MycroftToolkit.QuickCode {
     public static class StringExtensions {
-        //
-        // 摘要:
-        //     Eg MY_INT_VALUE => MyIntValue
+        // Eg MY_INT_VALUE => MyIntValue
         public static string ToTitleCase(this string input) {
             StringBuilder stringBuilder = new StringBuilder();
             for (int i = 0; i < input.Length; i++) {
@@ -26,16 +24,12 @@ namespace MycroftToolkit.QuickCode {
 
             return stringBuilder.ToString();
         }
-
-        //
-        // 摘要:
+        
         //     Returns whether or not the specified string is contained with this string
         public static bool Contains(this string source, string toCheck, StringComparison comparisonType) {
             return source.IndexOf(toCheck, comparisonType) >= 0;
         }
-
-        //
-        // 摘要:
+        
         //     Ex: "thisIsCamelCase" -> "This Is Camel Case"
         public static string SplitPascalCase(this string input) {
             if (string.IsNullOrEmpty(input)) {

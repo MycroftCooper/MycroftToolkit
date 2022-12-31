@@ -1,91 +1,81 @@
 ﻿using System;
-using System.Collections.Generic;
 
 // Warning! 
 // 这是有点脆弱的事件模式实现。建议不要在状态机之外使用它们
 // 
 namespace MycroftToolkit.QuickTool.FSM {
     public class StateEvent {
-        private Func<int> getStateInt;
-        private Func<bool> isInvokeAllowed;
-        private Action[] routingTable;
+        private readonly Func<int> _getStateInt;
+        private readonly Func<bool> _isInvokeAllowed;
+        private readonly Action[] _routingTable;
 
         public StateEvent(Func<bool> isInvokeAllowed, Func<int> stateProvider, int capacity) {
-            this.isInvokeAllowed = isInvokeAllowed;
-            this.getStateInt = stateProvider;
-            routingTable = new Action[capacity];
+            _isInvokeAllowed = isInvokeAllowed;
+            _getStateInt = stateProvider;
+            _routingTable = new Action[capacity];
         }
 
         internal void AddListener(int stateInt, Action listener) {
-            routingTable[stateInt] = listener;
+            _routingTable[stateInt] = listener;
         }
 
         public void Invoke() {
-            if (isInvokeAllowed != null && !isInvokeAllowed()) {
+            if (_isInvokeAllowed != null && !_isInvokeAllowed()) {
                 return;
             }
 
-            Action call = routingTable[getStateInt()];
-            if (call != null) {
-                call();
-                return;
-            }
+            Action call = _routingTable[_getStateInt()];
+            call?.Invoke();
         }
     }
 
     public class StateEvent<T> {
-        private Func<int> getStateInt;
-        private Func<bool> isInvokeAllowed;
-        private Action<T>[] routingTable;
+        private readonly Func<int> _getStateInt;
+        private readonly Func<bool> _isInvokeAllowed;
+        private readonly Action<T>[] _routingTable;
 
         public StateEvent(Func<bool> isInvokeAllowed, Func<int> stateProvider, int capacity) {
-            this.isInvokeAllowed = isInvokeAllowed;
-            this.getStateInt = stateProvider;
-            routingTable = new Action<T>[capacity];
+            _isInvokeAllowed = isInvokeAllowed;
+            _getStateInt = stateProvider;
+            _routingTable = new Action<T>[capacity];
         }
 
         internal void AddListener(int stateInt, Action<T> listener) {
-            routingTable[stateInt] = listener;
+            _routingTable[stateInt] = listener;
         }
 
         public void Invoke(T param) {
-            if (isInvokeAllowed != null && !isInvokeAllowed()) {
+            if (_isInvokeAllowed != null && !_isInvokeAllowed()) {
                 return;
             }
 
-            Action<T> call = routingTable[getStateInt()];
-            if (call != null) {
-                call(param);
-                return;
-            }
+            Action<T> call = _routingTable[_getStateInt()];
+            call?.Invoke(param);
         }
     }
 
     public class StateEvent<T1, T2> {
-        private Func<int> getStateInt;
-        private Func<bool> isInvokeAllowed;
-        private Action<T1, T2>[] routingTable;
+        private readonly Func<int> _getStateInt;
+        private readonly Func<bool> _isInvokeAllowed;
+        private readonly Action<T1, T2>[] _routingTable;
 
         public StateEvent(Func<bool> isInvokeAllowed, Func<int> stateProvider, int capacity) {
-            this.isInvokeAllowed = isInvokeAllowed;
-            this.getStateInt = stateProvider;
-            routingTable = new Action<T1, T2>[capacity];
+            _isInvokeAllowed = isInvokeAllowed;
+            _getStateInt = stateProvider;
+            _routingTable = new Action<T1, T2>[capacity];
         }
 
         internal void AddListener(int stateInt, Action<T1, T2> listener) {
-            routingTable[stateInt] = listener;
+            _routingTable[stateInt] = listener;
         }
 
         public void Invoke(T1 param1, T2 param2) {
-            if (isInvokeAllowed != null && !isInvokeAllowed()) {
+            if (_isInvokeAllowed != null && !_isInvokeAllowed()) {
                 return;
             }
 
-            Action<T1, T2> call = routingTable[getStateInt()];
-            if (call != null) {
-                call(param1, param2);
-                return;
-            }
+            Action<T1, T2> call = _routingTable[_getStateInt()];
+            call?.Invoke(param1, param2);
         }
     }
 }

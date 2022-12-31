@@ -18,8 +18,7 @@ namespace MycroftToolkit.MathTool {
         /// <summary>
         /// 曲线插值计算
         /// </summary>
-        public static Vector3 Interp(Vector3[] pts, float t)
-        {
+        public static Vector3 Interp(Vector3[] pts, float t) {
             int numSections = pts.Length - 3;
             int currPt = Mathf.Min(Mathf.FloorToInt(t * (float)numSections), numSections - 1);
             float u = t * (float)numSections - (float)currPt;

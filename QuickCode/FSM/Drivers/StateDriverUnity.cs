@@ -52,7 +52,7 @@ namespace MycroftToolkit.QuickTool.FSM {
         public StateEvent<Collider> OnTriggerStay;
         public StateEvent<Collider2D> OnTriggerStay2D;
         public StateEvent OnValidate;
-        public StateEvent OnWillRenderOjbect;
+        public StateEvent OnWillRenderObject;
         public StateEvent Reset;
         public StateEvent Start;
         public StateEvent Update;

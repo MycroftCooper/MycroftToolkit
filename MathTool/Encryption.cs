@@ -40,8 +40,5 @@ namespace MycroftToolkit.MathTool {
 
             return string.Empty;
         }
-
-
-
     }
 }
