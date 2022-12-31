@@ -1,5 +1,4 @@
-﻿using MycroftToolkit.MathTool;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -114,9 +113,9 @@ namespace MycroftToolkit.DiscreteGridToolkit.Hex {
             /// <param name="pos"></param>
             /// <returns></returns>
             public static Vector3Int Round(Vector3 pos) {
-                int q = pos.x.RoundToInt();
-                int r = pos.y.RoundToInt();
-                int s = pos.z.RoundToInt();
+                int q = (int) Math.Round(pos.x, MidpointRounding.AwayFromZero);
+                int r = (int) Math.Round(pos.y, MidpointRounding.AwayFromZero);
+                int s = (int) Math.Round(pos.z, MidpointRounding.AwayFromZero);
 
                 float q_diff = Math.Abs(q - pos.x);
                 float r_diff = Math.Abs(r - pos.y);
