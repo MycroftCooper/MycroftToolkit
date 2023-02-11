@@ -32,6 +32,30 @@ namespace MycroftToolkit.QuickCode {
 
             return true;
         }
+        
+        public bool InitPool(GameObject prefab, int size = 10, string newParentName = null, bool setActive = false) {
+            if (size < 1 || prefab == null) {
+                Debug.LogError("对象池大小或预制体出错!");
+                return false;
+            }
+
+            _pool = new Queue<GameObject>();
+            Size = size;
+            Transform parent = null;
+            if (! string.IsNullOrEmpty(newParentName)) {
+                parent = new GameObject("newParentName").transform;
+            }
+            Parent = parent;
+            Prefab = prefab;
+
+            for (int i = 0; i < Size; i++) {
+                _pool.Enqueue(CreateNewGo(setActive));
+            }
+            UsingCount = 0;
+
+            return true;
+        }
+        
         private GameObject CreateNewGo(bool setActive) {
             GameObject newObject = Object.Instantiate(Prefab, Parent, true);
             newObject.SetActive(setActive);
