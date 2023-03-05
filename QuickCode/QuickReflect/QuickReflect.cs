@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace MycroftToolkit.QuickCode {
@@ -141,8 +145,61 @@ namespace MycroftToolkit.QuickCode {
             obj.GetType().FindProperty(propertyName, InstanceBinding).SetValue(obj, value, null);
         }
         #endregion
-        
-        
+
+        #region FieldsAndProps
+        /// <summary>
+        /// 获取指定名字的属性或字段
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MemberInfo GetDataMember(Type objType, string name, bool isStatic) {
+            if (objType == null || name == null)
+                return null;
+
+            var flags = BindingFlags.Public | BindingFlags.NonPublic |
+                        (isStatic ? BindingFlags.Static : BindingFlags.Instance);
+
+            var prop = objType.GetProperty(name, flags);
+            if (prop != null)
+                return prop;
+
+            var field = objType.GetField(name, flags);
+            return field != null ? field : null;
+        }
+
+        /// <summary>
+        /// 通过反射为数据变量赋值
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetValue(Type objType, string name, object value, object instanceObj) {
+            if (objType == null || name == null)
+                return;
+
+            bool isStatic = (instanceObj == null);
+
+            var member = GetDataMember(objType, name, isStatic);
+            if (member == null) return;
+            switch (member.MemberType) {
+                case MemberTypes.Property:
+                    var prop = (PropertyInfo)member;
+                    prop.SetValue(instanceObj, ChangeType(value, prop.PropertyType), null);
+                    break;
+                case MemberTypes.Field:
+                    var field = (FieldInfo)member;
+                    field.SetValue(instanceObj, ChangeType(value, field.FieldType));
+                    break;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static object ChangeType(object value, Type conversionType)
+        {
+            if (value != null && value.GetType() == conversionType)
+                return value;
+
+            return Convert.ChangeType(value, conversionType, CultureInfo.InvariantCulture);
+        }
+        #endregion
+
         #region Has Method
         public static MethodInfo FindMethod(this Type type, string methodName, Type[] argsTypes = null, BindingFlags flags = FullBinding) =>
             argsTypes == null ?
@@ -374,5 +431,49 @@ namespace MycroftToolkit.QuickCode {
             }
             return (T)output;
         }
-     }
+
+        #region Assembly
+        public static readonly string[] SystemAssemblyPrefixList = new string[] {
+            "mscorlib","netstandard","System.",	"Mono.","Microsoft.", "Unity.","UnityEngine.","UnityEditor.",
+        };
+
+        /// <summary>
+        /// 检查是否用户程序集
+        /// (简单过滤是否在SystemAssemblyPrefixList内)
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsUserAssembly(Assembly assembly) {
+            var name = assembly.FullName;
+            foreach (var prefix in SystemAssemblyPrefixList) {
+                if (name.StartsWith(prefix))
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 获取可加载类型
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<Type> GetLoadableTypes(this Assembly assembly) {
+            try {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e) {
+                // Gets the array of classes that were defined in the module and loaded.
+                return e.Types.Where(t => t != null);
+            }
+        }
+
+        /// <summary>
+        /// 获取所有类型定义，允许指定只收集用户程序级
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<Type> GetAllTypes(bool userAssemblyOnly = true) {
+            return AppDomain.CurrentDomain.GetAssemblies()
+                .Where(asm => !userAssemblyOnly || IsUserAssembly(asm))
+                .SelectMany(asm => asm.GetLoadableTypes());
+        }
+        #endregion
+    }
 }
