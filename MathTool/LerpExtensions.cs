@@ -96,6 +96,19 @@ namespace MycroftToolkit.MathTool {
             return output;
         }
         
-        
+        public static int MapRange(this float target, Vector2 originalRange, Vector2Int targetRange) {
+            // 将目标数在原始区间内的位置计算为一个[0, 1]之间的比例
+            float t = Mathf.InverseLerp(originalRange.x, originalRange.y, target);
+            // 将比例映射到目标区间
+            float mappedFloat = Mathf.Lerp(targetRange.x, targetRange.y, t);
+            // 将结果转换为整数。你可以选择适合你需求的四舍五入方法。
+            return Mathf.RoundToInt(mappedFloat);
+        }
+
+        public static float MapRange(this float target, Vector2 originalRange, Vector2 targetRange) {
+            float t = Mathf.InverseLerp(originalRange.x, originalRange.y, target);
+            float mappedFloat = Mathf.Lerp(targetRange.x, targetRange.y, t);
+            return mappedFloat;
+        }
     }
 }

@@ -30,7 +30,7 @@ namespace MycroftToolkit.QuickCode {
         public static void Reset(this Transform tr) {
             tr.position = Vector3.zero;
             tr.rotation = Quaternion.identity;
-            tr.localScale = Vector3.zero;
+            tr.localScale = Vector3.one;
         }
         
         public static Transform FindParent(this Transform tr, string name) {
@@ -62,18 +62,31 @@ namespace MycroftToolkit.QuickCode {
             return output;
         }
 
-        /// <summary>
-        /// 获取Hierarchy视图中的对象的路劲
-        /// </summary>
-        public static void GetPathInHierarchy(this Transform tran, ref string path) {
-            while (true) {
-                path = string.IsNullOrEmpty(path) ? tran.name : $"{tran.name}/{path}";
-                if (tran.parent != null) {
-                    tran = tran.parent;
-                    continue;
-                }
-
-                break;
+        public static string GetPathInScenes(this Transform transform) {
+            string path = transform.name;
+            while (transform.parent != null) {
+                transform = transform.parent;
+                path = transform.name + "/" + path;
+            }
+            return path;
+        }
+        
+        public static string GetPathInScenes(this GameObject gameObject) {
+            var transform = gameObject.transform;
+            string path = transform.name;
+            while (transform.parent != null) {
+                transform = transform.parent;
+                path = transform.name + "/" + path;
+            }
+            return path;
+        }
+        
+        public static void DestroyAllChildren(this Transform tr) {
+            if (tr.childCount <= 0) {
+                return;
+            }
+            for (int i = tr.childCount - 1; i >= 0; i--) {
+                Object.Destroy(tr.GetChild(i).gameObject);
             }
         }
     }

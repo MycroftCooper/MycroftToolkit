@@ -30,9 +30,7 @@ namespace MycroftToolkit.QuickCode {
             return cloneList;
         }
 
-        /// <summary>
-        /// 字典Dictionary的拷贝Clone
-        /// </summary>
+        #region 字典
         public static Dictionary<T1, T2> Clone<T1, T2>(this Dictionary<T1, T2> resDic) where T2 : ICloneable {
             if (resDic == null) return null;
             Dictionary<T1, T2> cloneDic = new Dictionary<T1, T2>();
@@ -48,6 +46,57 @@ namespace MycroftToolkit.QuickCode {
             }
             return cloneDic;
         }
+        
+        public static void RemoveKeyValueNulls<TKey, TValue>(this Dictionary<TKey, TValue> dict) {
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
+            
+            var keysToRemove = dict.Where(pair => pair.Key == null || pair.Value == null)
+                .Select(pair => pair.Key)
+                .ToList();
+            
+            foreach (var key in keysToRemove) {
+                dict.Remove(key);
+            }
+        }
+        
+        public static void RemoveKeyNulls<TKey, TValue>(this Dictionary<TKey, TValue> dict) {
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
+            
+            var keysToRemove = dict.Where(pair => pair.Key == null).Select(pair => pair.Key).ToList();
+            
+            foreach (var key in keysToRemove) {
+                dict.Remove(key);
+            }
+        }
+        
+        public static void RemoveValueNulls<TKey, TValue>(this Dictionary<TKey, TValue> dict) {
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
+            
+            var keysToRemove = dict.Where(pair => pair.Value == null).Select(pair => pair.Key).ToList();
+            
+            foreach (var key in keysToRemove) {
+                dict.Remove(key);
+            }
+        }
+        
+        public static void AddIntValue<T>(this Dictionary<T, int> dictionary, T key) {
+            if (dictionary.ContainsKey(key)) {
+                dictionary[key]++;
+            } else {
+                dictionary.Add(key,1);
+            }
+        }
+        
+        public static void AddIntValue<T>(this Dictionary<T, int> dictionary, T key, int value) {
+            if (dictionary.ContainsKey(key)) {
+                dictionary[key] += value;
+            } else {
+                dictionary.Add(key, value);
+            }
+        }
 
         public static void ForEach<TKey, TValue>(this Dictionary<TKey, TValue> dictionary,
             Action<KeyValuePair<TKey, TValue>> action) {
@@ -57,7 +106,8 @@ namespace MycroftToolkit.QuickCode {
                 action(item);
             }
         }
-
+        #endregion
+        
         public static void ForLoop(this int i, Action<int> callBack) {
             for (int count = 0; count < i; count++) {
                 callBack(count);
