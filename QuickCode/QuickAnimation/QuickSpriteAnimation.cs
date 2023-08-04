@@ -3,6 +3,7 @@ using System.Linq;
 using DG.Tweening;
 using UnityEngine;
 using Sirenix.OdinInspector;
+using UnityEngine.Events;
 using Random = System.Random;
 
 namespace MycroftToolkit.QuickCode.QuickAnimation {
@@ -94,10 +95,18 @@ namespace MycroftToolkit.QuickCode.QuickAnimation {
             
             sr.sprite = sprites[index];
             _currentIndex = index;
+            onNextFrame?.Invoke();
         }
         #endregion
 
         #region 生命周期相关
+        [BoxGroup("Event")]
+        public UnityEvent onAnimationStart;
+        [BoxGroup("Event")]
+        public UnityEvent onAnimationEnd;
+        [BoxGroup("Event")]
+        public UnityEvent onNextFrame;
+        
         private void Awake() {
             if (frameRate <= 0) {
                 Debug.LogError($"{DebugHead}配置错误!frameRate必须为正整数!");
@@ -142,6 +151,8 @@ namespace MycroftToolkit.QuickCode.QuickAnimation {
             _isStart = true;
             isPlaying = true;
             _currentFrameDuration = 0;
+            
+            onAnimationStart?.Invoke();
             
             if (!isAutoEndByTimer) return;
             if (targetDuration <= 0) {
@@ -208,6 +219,7 @@ namespace MycroftToolkit.QuickCode.QuickAnimation {
         }
         
         private void OnAnimationEnd() {
+            onAnimationEnd?.Invoke();
             Reset();
             if (isNeedDisableAtEnd) {
                 targetGameObject.SetActive(false);
