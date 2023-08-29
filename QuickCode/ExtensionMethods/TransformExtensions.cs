@@ -89,5 +89,15 @@ namespace MycroftToolkit.QuickCode {
                 Object.Destroy(tr.GetChild(i).gameObject);
             }
         }
+
+        public static Transform FindSceneRootTransformByName(this Transform tr, string objectName) {
+            var rootTransList = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+            foreach (GameObject rootObject in rootTransList) {
+                if (rootObject.name == objectName) {
+                    return rootObject.transform;
+                }
+            }
+            return null;
+        }
     }
 }

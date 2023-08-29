@@ -33,7 +33,7 @@ namespace MycroftToolkit.QuickCode.QuickAnimation {
                 // todo: AB加载目标路径资源至sprites数组中
             }
 
-            if (sprites != null && sprites.All(_ => _ != null)) return true;
+            if (sprites != null && sprites.All(s => s != null)) return true;
             Debug.LogError($"{DebugHead}sprites数组中存在空值!初始化失败!");
             return false;
         }
