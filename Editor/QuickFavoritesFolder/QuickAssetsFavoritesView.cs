@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
 
-namespace QuickFavoritesFolder {
+namespace QuickFavorites.Assets {
     public enum SortOption { CustomOrder, Name, Size, FileType }
     
     [Serializable]
@@ -25,8 +25,8 @@ namespace QuickFavoritesFolder {
         public List<FavoritesItemView> items;
     }
     
-    public class QuickFavoritesFolderView : EditorWindow {
-        public static QuickFavoritesFolderCtrl Ctrl;
+    public class QuickAssetsFavoritesView : EditorWindow {
+        public static QuickAssetsFavoritesCtrl Ctrl;
         
         public static SortOption SelectedSortOption = SortOption.CustomOrder;
         public static bool IsOrderReverse; 
@@ -36,13 +36,13 @@ namespace QuickFavoritesFolder {
         private bool _isShowLastModifiedTime;
         private string _searchString = "";
         
-        public readonly Dictionary<string, bool> IsGroupFoldout = new Dictionary<string, bool>();
+        public readonly Dictionary<string, bool> IsGroupFoldout = new();
         
-        [MenuItem("Window/QuickFavoritesFolder")]
+        [MenuItem("Window/QuickAssetsFavorites")]
         public static void ShowWindow() {
-            Ctrl ??= new QuickFavoritesFolderCtrl();
+            Ctrl ??= new QuickAssetsFavoritesCtrl();
             Ctrl.UpdateGroups(SelectedSortOption);
-            GetWindow<QuickFavoritesFolderView>("QuickFavoritesFolder");
+            GetWindow<QuickAssetsFavoritesView>("QuickAssetsFavorites");
         }
 
         private void OnGUI() {
@@ -70,15 +70,17 @@ namespace QuickFavoritesFolder {
             GUI.Box(dropArea, "Drag Objects Here to Create New Group");
             OnItemDrop(dropArea, null);
 
-            OnColumnHeadGUI();
+            OnTableHeadGUI();
 
             for (var index = 0; index < Ctrl.Groups.Count; index++) {
+                OnInsertGroupGUI(index);
                 var group = Ctrl.Groups[index];
                 OnGroupGUI(group);
             }
+            OnInsertGroupGUI(Ctrl.Groups.Count);
         }
 
-        private void OnColumnHeadGUI() {
+        private void OnTableHeadGUI() {
             if (!_isShowFileSize && !_isShowFileType && !_isShowLastAccessTime && !_isShowLastModifiedTime) return;
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(10));
             GUILayout.BeginHorizontal();
@@ -110,13 +112,24 @@ namespace QuickFavoritesFolder {
         
         #region Group相关
         private void OnGroupGUI(FavoritesGroupView group) {
-            if (!IsGroupFoldout.ContainsKey(group.name)) {
-                IsGroupFoldout[group.name] = true;
-            }
+            IsGroupFoldout.TryAdd(group.name, true);
             
             Rect groupRect = EditorGUILayout.BeginVertical();// 开始渲染分组区域
             
             GUILayout.BeginHorizontal();
+            
+            GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
+                alignment = TextAnchor.MiddleCenter,
+                fixedWidth = 10, // 设置固定宽度
+                fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
+            };
+            Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
+            EditorGUI.LabelField(labelRect, "≡");
+            EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
+            if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
+                OnGroupDrag(group);
+            }
+            
             if (_groupBeingRenamed == group.name) {
                 // 如果这个组正在被重命名，显示文本框
                 _newGroupName = EditorGUILayout.TextField(_newGroupName, GUILayout.ExpandWidth(true));
@@ -148,12 +161,14 @@ namespace QuickFavoritesFolder {
                 if (group.items.Count == 0) {
                     GUILayout.Space(50); // 提供足够的空间用于拖拽
                 } else {
-                    for (var index = 0; index < group.items.Count; index++) {
+                    for (var index = IsOrderReverse? group.items.Count - 1 : 0; 
+                         IsOrderReverse? index >= 0 : index < group.items.Count; 
+                         index = IsOrderReverse? index - 1: index + 1) {
                         var item = group.items[index];
-                        OnInsertGUI(group, index);
+                        OnInsertItemGUI(group, index);
                         OnItemGUI(item);
                     }
-                    OnInsertGUI(group, group.items.Count);
+                    OnInsertItemGUI(group, group.items.Count);
                 }
                 
             }
@@ -164,13 +179,47 @@ namespace QuickFavoritesFolder {
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
         }
 
-        private void OnInsertGUI(FavoritesGroupView group, int index) {
-            var itemRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(2));
-            if (Event.current.type == EventType.Repaint && DragAndDrop.visualMode == DragAndDropVisualMode.Move && itemRect.Contains(Event.current.mousePosition)) {
-                // 绘制一个视觉反馈
-                Handles.DrawLine(new Vector2(itemRect.x, itemRect.yMax), new Vector2(itemRect.xMax, itemRect.yMax));
+        private void OnInsertGroupGUI(int index) {
+            var groupRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(4));
+            if (Event.current.type == EventType.Repaint && DragAndDrop.visualMode == DragAndDropVisualMode.Move && groupRect.Contains(Event.current.mousePosition)) {
+                Handles.DrawLine(new Vector2(groupRect.x, groupRect.yMax), new Vector2(groupRect.xMax, groupRect.yMax));
             }
-            OnItemDrop(itemRect, group, index);
+            OnGroupDrop(groupRect, index);
+        }
+
+        private void OnGroupDrag(FavoritesGroupView group) {// 拖拽处理
+            var dragRect = GUILayoutUtility.GetLastRect();
+            if (Event.current.type != EventType.MouseDown || !dragRect.Contains(Event.current.mousePosition)) return;
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.objectReferences = null;
+            DragAndDrop.SetGenericData("DraggingGroup", group);
+            DragAndDrop.StartDrag(group.name);
+            Event.current.Use();
+        }
+        
+        private void OnGroupDrop(Rect dropArea, int index = -1) {
+            Event currentEvent = Event.current;
+            EventType currentEventType = currentEvent.type;
+
+            if (!dropArea.Contains(currentEvent.mousePosition))
+                return;
+            switch (currentEventType) {
+                case EventType.DragUpdated:
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Move;
+                    currentEvent.Use();
+                    break;
+                case EventType.DragPerform:
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                    DragAndDrop.AcceptDrag();
+                    currentEvent.Use();
+                    FavoritesGroupView group = DragAndDrop.GetGenericData("DraggingGroup") as FavoritesGroupView;
+                    int targetIndex = index;
+                    if (index != -1 && group != null) {
+                        targetIndex = GetInsertionIndex(dropArea, Ctrl.Groups,group, index);
+                    }
+                    Ctrl.ChangeGroupOrderInGroup(group, targetIndex, false); // 添加到指定分组
+                    break;
+            }
         }
         
         private string _groupBeingRenamed;
@@ -207,8 +256,8 @@ namespace QuickFavoritesFolder {
                 fixedWidth = 10, // 设置固定宽度
                 fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
             };
-            Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("="), dragHandleStyle);
-            EditorGUI.LabelField(labelRect, "=");
+            Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
+            EditorGUI.LabelField(labelRect, "≡");
             EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
             if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
                 OnItemDrag(item);
@@ -227,17 +276,26 @@ namespace QuickFavoritesFolder {
 
         private void OnItemInfoGUI(FavoritesItemView item) {
             if (_isShowFileType) {
-                GUILayout.Label(" | " +item.type, GUILayout.Width(100));
+                GUILayout.Label(" | " + item.type, GUILayout.Width(100));
             }
             if (_isShowFileSize) {
-                GUILayout.Label( " | " +FormatSize(item.size), GUILayout.Width(80));
+                GUILayout.Label( " | " + FormatSize(item.size), GUILayout.Width(80));
             }
             if (_isShowLastAccessTime) {
-                GUILayout.Label(" | " +FormatDateTime(new DateTime(item.lastAccessTime)), GUILayout.Width(120));
+                GUILayout.Label(" | " + FormatDateTime(new DateTime(item.lastAccessTime)), GUILayout.Width(120));
             }
             if (_isShowLastModifiedTime) {
-                GUILayout.Label(" | " +FormatDateTime(new DateTime(item.lastModifiedTime)), GUILayout.Width(120));
+                GUILayout.Label(" | " + FormatDateTime(new DateTime(item.lastModifiedTime)), GUILayout.Width(120));
             }
+        }
+        
+        private void OnInsertItemGUI(FavoritesGroupView group, int index) {
+            var itemRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(2));
+            if (Event.current.type == EventType.Repaint && DragAndDrop.visualMode == DragAndDropVisualMode.Move && itemRect.Contains(Event.current.mousePosition)) {
+                // 绘制一个视觉反馈
+                Handles.DrawLine(new Vector2(itemRect.x, itemRect.yMax), new Vector2(itemRect.xMax, itemRect.yMax));
+            }
+            OnItemDrop(itemRect, group, index);
         }
 
         private void OnItemDrag(FavoritesItemView item) {// 拖拽处理
@@ -270,7 +328,7 @@ namespace QuickFavoritesFolder {
                     currentEvent.Use();
                     if (DragAndDrop.GetGenericData("DraggingItem") is FavoritesItemView dragData) {
                         if (index != -1 && group != null) {
-                            targetIndex = GetInsertionIndex(dropArea, group, dragData, index);
+                            targetIndex = GetInsertionIndex(dropArea, group.items, dragData, index, IsOrderReverse);
                         }
                         if (groupName != dragData.groupName) {
                             Ctrl.ChangeItemGroup(dragData, groupName, targetIndex);
@@ -280,7 +338,7 @@ namespace QuickFavoritesFolder {
                         
                     } else {
                         if (index != -1 && group != null) {
-                            targetIndex = GetInsertionIndex(dropArea, group, null, index);
+                            targetIndex = GetInsertionIndex(dropArea, group.items, null, index, IsOrderReverse);
                         }
 
                         for (int i = DragAndDrop.objectReferences.Length -1; i >= 0; i--) {
@@ -292,14 +350,18 @@ namespace QuickFavoritesFolder {
             }
         }
         
-        private int GetInsertionIndex(Rect itemRect, FavoritesGroupView group, FavoritesItemView draggedItem, int currentIndex) {
+        private int GetInsertionIndex<T>(Rect rect, List<T> list, T item, int currentIndex, bool isReverse = false) {
+            if (isReverse) {
+                currentIndex = list.Count - currentIndex;
+            }
             var mousePositionY = Event.current.mousePosition.y;// 获取鼠标位置
-            var halfHeight = itemRect.height / 2;// 基于鼠标位置判断应该插入到当前索引之前还是之后
-            var insertionIndex = mousePositionY > (itemRect.y + halfHeight) ? currentIndex + 1 : currentIndex;
-            insertionIndex = Mathf.Clamp(insertionIndex, 0, group.items.Count);// 确保新的索引不会超出列表范围
-            if (draggedItem != null && group.items.Contains(draggedItem) && group.items.IndexOf(draggedItem) < currentIndex) {// 如果拖拽的项原来就在当前项之前，需要调整新的索引
+            var halfHeight = rect.height / 2;// 基于鼠标位置判断应该插入到当前索引之前还是之后
+            var insertionIndex = mousePositionY > (rect.y + halfHeight) ? currentIndex + 1 : currentIndex;
+            insertionIndex = Mathf.Clamp(insertionIndex, 0, list.Count);// 确保新的索引不会超出列表范围
+            if (item != null && list.Contains(item) && list.IndexOf(item) < currentIndex) {// 如果拖拽的项原来就在当前项之前，需要调整新的索引
                 insertionIndex--;
             }
+            insertionIndex = Mathf.Clamp(insertionIndex, 0, list.Count);// 确保新的索引不会超出列表范围
             return insertionIndex;
         }
         
@@ -311,7 +373,7 @@ namespace QuickFavoritesFolder {
         }
         #endregion
         
-        private string FormatSize(long bytes) {
+        private static string FormatSize(long bytes) {
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
             double len = bytes;
             int order = 0;
@@ -322,7 +384,7 @@ namespace QuickFavoritesFolder {
             return $"{len:0.##} {sizes[order]}";
         }
 
-        private string FormatDateTime(DateTime dateTime) {
+        private static string FormatDateTime(DateTime dateTime) {
             return dateTime.ToString("g"); // 使用短日期格式和短时间格式
         }
     }

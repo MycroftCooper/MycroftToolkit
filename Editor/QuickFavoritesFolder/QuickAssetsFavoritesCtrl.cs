@@ -5,13 +5,13 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace QuickFavoritesFolder {
-    public class QuickFavoritesFolderCtrl {
-        public static QuickFavoritesFolderModel Model;
+namespace QuickFavorites.Assets {
+    public class QuickAssetsFavoritesCtrl {
+        public static QuickAssetsFavoritesModel Model;
         public List<FavoritesGroupView> Groups;
         
-        public QuickFavoritesFolderCtrl() {
-            Model = new QuickFavoritesFolderModel();
+        public QuickAssetsFavoritesCtrl() {
+            Model = new QuickAssetsFavoritesModel();
             Model.Load();
         }
 
@@ -64,6 +64,10 @@ namespace QuickFavoritesFolder {
             return group;
         }
         
+        private void SortGroup(FavoritesGroupView group, SortOption sortOption) {
+            
+        }
+        
         public FavoritesGroupView AddGroup(string groupName) {
             if (Groups.Any(g => g.name == groupName)) {
                 Debug.LogError($"QuickFavoritesFolder>AddGroup>Group of the same name[{groupName}] already exists!");
@@ -93,6 +97,21 @@ namespace QuickFavoritesFolder {
             if (Model.DeleteGroup(group.name)) {
                 Groups.Remove(group);
             }
+        }
+        
+        public void ChangeGroupOrderInGroup(FavoritesGroupView group, int newOrder, bool isReverse) {
+            if (group == null) {
+                Debug.LogError($"QuickFavoritesFolder>ChangeItemOrder>Group cant be null!");
+                return;
+            }
+            newOrder = newOrder == -1 ? Model.Groups.Count : newOrder;
+            FavoritesGroupData groupData = Model.FindGroup(group.name);
+            bool isSuccesses = Model.ChangeGroupOrder(groupData, newOrder);
+            if (!isSuccesses) {
+                return;
+            }
+            Groups.Remove(group);
+            Groups.Insert(newOrder, group);
         }
         #endregion
 
@@ -158,10 +177,6 @@ namespace QuickFavoritesFolder {
                 lastModifiedTime = fileInfo.LastWriteTimeUtc.Ticks
             };
             return view;
-        }
-
-        private void SortGroup(FavoritesGroupView group, SortOption sortOption) {
-            
         }
         
         public void AddItem(Object obj, string groupName, int index = -1) {
@@ -242,7 +257,7 @@ namespace QuickFavoritesFolder {
             targetGroupView.items.Insert(index, item);
             oldGroupView.items.Remove(item);
             item.groupName = targetGroupName;
-            SortGroup(targetGroupView, QuickFavoritesFolderView.SelectedSortOption);
+            SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOption);
         }
         
         public void RemoveItem(FavoritesItemView item) {

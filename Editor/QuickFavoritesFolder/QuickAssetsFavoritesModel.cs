@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
-namespace QuickFavoritesFolder {
+namespace QuickFavorites.Assets {
     [Serializable]
     public class FavoritesItemData {
         public string guid;
@@ -16,15 +17,30 @@ namespace QuickFavoritesFolder {
         public List<FavoritesItemData> items;
     }
     
-    public class QuickFavoritesFolderModel {
+    public class QuickAssetsFavoritesModel {
         public List<FavoritesGroupData> Groups;
-
+        private const string DataFileName = "QuickAssetsFavoritesData.json";
         public void Load() {
-            Groups = new List<FavoritesGroupData>();
+            string folderPath = Path.Combine(Application.persistentDataPath, "QuickFavorites");
+            string dataFilePath = Path.Combine(folderPath, DataFileName);
+            if (File.Exists(dataFilePath)) {
+                string json = File.ReadAllText(dataFilePath);
+                JsonUtility.FromJsonOverwrite(json, this);
+            } else {
+                Groups = new List<FavoritesGroupData>();
+            }
         }
 
         public void Save() {
-            
+            string folderPath = Path.Combine(Application.persistentDataPath, "QuickFavorites");
+            if (!Directory.Exists(folderPath)) {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            string dataFilePath = Path.Combine(folderPath, DataFileName);
+            string json = JsonUtility.ToJson(this, true);
+            File.WriteAllText(dataFilePath, json);
+            Debug.Log(Application.persistentDataPath);
         }
 
         public bool AddItem(FavoritesItemData item, FavoritesGroupData group, int index = -1) {
@@ -142,6 +158,24 @@ namespace QuickFavoritesFolder {
 
             group.name = newName;
             Save();
+            return true;
+        }
+
+        public bool ChangeGroupOrder(FavoritesGroupData group, int newOrder) {
+            if (group == null) {
+                Debug.LogError($"QuickFavoritesFolder>ChangeGroupOrder>Group cant be null!");
+                return false;
+            }
+            if (!Groups.Contains(group)) {
+                Debug.LogError($"QuickFavoritesFolder>ChangeGroupOrder>Group[{group.name}] not in data!");
+                return false;
+            }
+            if (newOrder < 0 || newOrder > Groups.Count) {
+                Debug.LogError($"QuickFavoritesFolder>ChangeGroupOrder>Order[{newOrder}] is out of range!");
+                return false;
+            }
+            Groups.Remove(group);
+            Groups.Insert(newOrder, group);
             return true;
         }
         
