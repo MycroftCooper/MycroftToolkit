@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.Audio;
 using UnityEngine.Video;
-using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 namespace QuickFavorites.Assets {
