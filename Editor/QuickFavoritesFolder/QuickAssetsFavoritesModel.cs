@@ -19,9 +19,10 @@ namespace QuickFavorites.Assets {
     
     public class QuickAssetsFavoritesModel {
         public List<FavoritesGroupData> Groups;
-        private const string DataFileName = "QuickAssetsFavoritesData.json";
+        public static string RootPath = "QuickFavorites";
+        public static string DataFileName = "QuickAssetsFavoritesData.json";
         public void Load() {
-            string folderPath = Path.Combine(Application.persistentDataPath, "QuickFavorites");
+            string folderPath = Path.Combine(Application.persistentDataPath, RootPath);
             string dataFilePath = Path.Combine(folderPath, DataFileName);
             if (File.Exists(dataFilePath)) {
                 string json = File.ReadAllText(dataFilePath);
@@ -32,7 +33,7 @@ namespace QuickFavorites.Assets {
         }
 
         public void Save() {
-            string folderPath = Path.Combine(Application.persistentDataPath, "QuickFavorites");
+            string folderPath = Path.Combine(Application.persistentDataPath, RootPath);
             if (!Directory.Exists(folderPath)) {
                 Directory.CreateDirectory(folderPath);
             }

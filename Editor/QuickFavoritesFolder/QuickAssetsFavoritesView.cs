@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Audio;
 using UnityEngine.Video;
+using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 namespace QuickFavorites.Assets {
@@ -71,7 +74,9 @@ namespace QuickFavorites.Assets {
         
         private static bool CanDragItem => !isLock && SelectedSortOption == SortOption.CustomOrder;
         public readonly Dictionary<string, bool> IsGroupFoldout = new Dictionary<string, bool>();
-        
+        private Vector2 scrollPosition;
+
+        #region 菜单相关
         [MenuItem("Window/QuickAssetsFavorites")]
         public static void ShowWindow() {
             ctrl ??= new QuickAssetsFavoritesCtrl();
@@ -84,12 +89,12 @@ namespace QuickFavorites.Assets {
             if (selectedObject == null) return;
             Ctrl.AddItem(selectedObject, "Default");
         }
-
-        // 该选项是否可用的逻辑
+        
         [MenuItem("Assets/Add To QuickAssetsFavorites", true)]
         private static bool AddToQuickFavoritesValidate() {
-            return Selection.activeObject != null;
+            return Selection.activeObject != null;// 该选项是否可用的逻辑
         }
+        #endregion
         
         private void Awake() {
             minSize = new Vector2(500, 400);
@@ -117,8 +122,8 @@ namespace QuickFavorites.Assets {
                 OnCancelSearchBtnClick();
             }
             GUILayout.EndHorizontal();
-            FilterOptions = (AssetFilterOptions)EditorGUILayout.EnumFlagsField("Filter Type", FilterOptions);
             
+            FilterOptions = (AssetFilterOptions)EditorGUILayout.EnumFlagsField("Filter Type", FilterOptions);
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
             
             Rect dropArea = GUILayoutUtility.GetRect(0.0f, 50.0f, GUILayout.ExpandWidth(true));
@@ -127,12 +132,18 @@ namespace QuickFavorites.Assets {
 
             OnTableHeadGUI();
 
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
             for (var index = 0; index < Ctrl.Groups.Count; index++) {
                 OnInsertGroupGUI(index);
                 var group = Ctrl.Groups[index];
                 OnGroupGUI(group);
             }
             OnInsertGroupGUI(Ctrl.Groups.Count);
+            
+            if (GUILayout.Button("Open Data Folder")) {
+                Process.Start(Path.Combine(Application.persistentDataPath, QuickAssetsFavoritesModel.RootPath));
+            }
+            GUILayout.EndScrollView();
         }
 
         private void OnTableHeadGUI() {
@@ -198,7 +209,7 @@ namespace QuickFavorites.Assets {
             } else {
                 // 显示分组的Foldout
                 IsGroupFoldout[group.name] = EditorGUILayout.Foldout(IsGroupFoldout[group.name], group.name, true);
-                if (_groupBeingRenamed == null && !isLock) {
+                if (string.IsNullOrEmpty(_groupBeingRenamed) && !isLock) {
                     // 显示重命名按钮
                     if (GUILayout.Button("Rename", GUILayout.Width(80))) {
                         _groupBeingRenamed = group.name; // 激活重命名状态
@@ -231,7 +242,6 @@ namespace QuickFavorites.Assets {
                     }
                     OnInsertItemGUI(group, group.items.Count);
                 }
-                
             }
             OnItemDrop(groupRect, group);
             
@@ -241,7 +251,7 @@ namespace QuickFavorites.Assets {
         }
 
         private void OnInsertGroupGUI(int index) {
-            var groupRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(4));
+            var groupRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(8));
             if (Event.current.type == EventType.Repaint && DragAndDrop.visualMode == DragAndDropVisualMode.Move && groupRect.Contains(Event.current.mousePosition)) {
                 Handles.DrawLine(new Vector2(groupRect.x, groupRect.yMax), new Vector2(groupRect.xMax, groupRect.yMax));
             }
@@ -365,10 +375,9 @@ namespace QuickFavorites.Assets {
         }
         
         private void OnInsertItemGUI(FavoritesGroupView group, int index) {
-            var itemRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(2));
+            var itemRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(4));
             if (Event.current.type == EventType.Repaint && DragAndDrop.visualMode == DragAndDropVisualMode.Move && itemRect.Contains(Event.current.mousePosition)) {
-                // 绘制一个视觉反馈
-                Handles.DrawLine(new Vector2(itemRect.x, itemRect.yMax), new Vector2(itemRect.xMax, itemRect.yMax));
+                Handles.DrawLine(new Vector2(itemRect.x, itemRect.yMax), new Vector2(itemRect.xMax, itemRect.yMax));// 绘制一个视觉反馈
             }
             OnItemDrop(itemRect, group, index);
         }
