@@ -2,10 +2,35 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Audio;
+using UnityEngine.Video;
 using Object = UnityEngine.Object;
 
 namespace QuickFavorites.Assets {
-    public enum SortOption { CustomOrder, Name, Size, FileType }
+    public enum SortOption { CustomOrder, Name, Size, FileType, LastAccessTime, LastModifiedTime}
+    
+    [Flags] // 允许枚举值组合
+    public enum AssetFilterOptions {
+        None = 0,
+        Everything = ~0, // 所有选项
+        AnimationClip = 1 << 0,
+        AudioClip = 1 << 1,
+        AudioMixer = 1 << 2,
+        ComputeShader = 1 << 3,
+        Font = 1 << 4,
+        GUISkin = 1 << 5,
+        Material = 1 << 6,
+        Mesh = 1 << 7,
+        Model = 1 << 8,
+        PhysicMaterial = 1 << 9,
+        Prefab = 1 << 10,
+        Scene = 1 << 11,
+        Script = 1 << 12,
+        Shader = 1 << 13,
+        Sprite = 1 << 14,
+        Texture = 1 << 15,
+        VideoClip = 1 << 16,
+    }
     
     [Serializable]
     public class FavoritesItemView {
@@ -26,43 +51,73 @@ namespace QuickFavorites.Assets {
     }
     
     public class QuickAssetsFavoritesView : EditorWindow {
-        public static QuickAssetsFavoritesCtrl Ctrl;
+        public static QuickAssetsFavoritesCtrl Ctrl => ctrl ??= new QuickAssetsFavoritesCtrl();
+        private static QuickAssetsFavoritesCtrl ctrl;
         
+        public static AssetFilterOptions FilterOptions = AssetFilterOptions.Everything;
         public static SortOption SelectedSortOption = SortOption.CustomOrder;
+        private static SortOption currentSortOption = SortOption.CustomOrder;
+        
         public static bool IsOrderReverse; 
+        private static bool isLock;
+        
         private bool _isShowFileSize;
         private bool _isShowFileType;
         private bool _isShowLastAccessTime;
         private bool _isShowLastModifiedTime;
-        private string _searchString = "";
+        private static readonly GUILayoutOption ToggleWidth = GUILayout.Width(120);
         
-        public readonly Dictionary<string, bool> IsGroupFoldout = new();
+        private static string searchString = "";
+        
+        private static bool CanDragItem => !isLock && SelectedSortOption == SortOption.CustomOrder;
+        public readonly Dictionary<string, bool> IsGroupFoldout = new Dictionary<string, bool>();
         
         [MenuItem("Window/QuickAssetsFavorites")]
         public static void ShowWindow() {
-            Ctrl ??= new QuickAssetsFavoritesCtrl();
-            Ctrl.UpdateGroups(SelectedSortOption);
+            ctrl ??= new QuickAssetsFavoritesCtrl();
             GetWindow<QuickAssetsFavoritesView>("QuickAssetsFavorites");
+        }
+        
+        [MenuItem("Assets/Add To QuickAssetsFavorites")]
+        private static void AddToQuickFavorites() {
+            var selectedObject = Selection.activeObject;
+            if (selectedObject == null) return;
+            Ctrl.AddItem(selectedObject, "Default");
+        }
+
+        // 该选项是否可用的逻辑
+        [MenuItem("Assets/Add To QuickAssetsFavorites", true)]
+        private static bool AddToQuickFavoritesValidate() {
+            return Selection.activeObject != null;
+        }
+        
+        private void Awake() {
+            minSize = new Vector2(500, 400);
         }
 
         private void OnGUI() {
             GUILayout.BeginHorizontal();
             SelectedSortOption = (SortOption)EditorGUILayout.EnumPopup("Sort By", SelectedSortOption);
-            IsOrderReverse = EditorGUILayout.ToggleLeft("Is Order Reverse", IsOrderReverse, GUILayout.Width(120));
+            IsOrderReverse = EditorGUILayout.ToggleLeft("IsReverse", IsOrderReverse, GUILayout.Width(80));
+            isLock = EditorGUILayout.ToggleLeft("IsLock", isLock, GUILayout.Width(80));
             GUILayout.EndHorizontal();
+
+            UpdateSort();
+            
             GUILayout.BeginHorizontal();
-            _isShowFileType = EditorGUILayout.ToggleLeft("Show File Type", _isShowFileType);
-            _isShowFileSize = EditorGUILayout.ToggleLeft("Show File Size", _isShowFileSize);
-            _isShowLastAccessTime = EditorGUILayout.ToggleLeft("Show Last Access Time", _isShowLastAccessTime);
-            _isShowLastModifiedTime = EditorGUILayout.ToggleLeft("Show Last Modified Time", _isShowLastModifiedTime);
+            _isShowFileType = EditorGUILayout.ToggleLeft("Type", _isShowFileType, ToggleWidth);
+            _isShowFileSize = EditorGUILayout.ToggleLeft("Size", _isShowFileSize, ToggleWidth);
+            _isShowLastAccessTime = EditorGUILayout.ToggleLeft("LastAccessTime", _isShowLastAccessTime, ToggleWidth);
+            _isShowLastModifiedTime = EditorGUILayout.ToggleLeft("LastModifiedTime", _isShowLastModifiedTime, ToggleWidth);
             GUILayout.EndHorizontal();
             
             GUILayout.BeginHorizontal();
-            _searchString = EditorGUILayout.TextField("Search", _searchString);
+            searchString = EditorGUILayout.TextField("Search", searchString);
             if (GUILayout.Button("X", GUILayout.Width(20))) {
                 OnCancelSearchBtnClick();
             }
             GUILayout.EndHorizontal();
+            FilterOptions = (AssetFilterOptions)EditorGUILayout.EnumFlagsField("Filter Type", FilterOptions);
             
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
             
@@ -107,30 +162,34 @@ namespace QuickFavorites.Assets {
         }
         
         private void OnCancelSearchBtnClick() {
-            _searchString = "";
+            searchString = "";
         }
         
         #region Group相关
         private void OnGroupGUI(FavoritesGroupView group) {
-            IsGroupFoldout.TryAdd(group.name, true);
+            if (!IsGroupFoldout.ContainsKey(group.name)) {
+                IsGroupFoldout.Add(group.name, true);
+            }
             
             Rect groupRect = EditorGUILayout.BeginVertical();// 开始渲染分组区域
             
             GUILayout.BeginHorizontal();
-            
-            GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
-                alignment = TextAnchor.MiddleCenter,
-                fixedWidth = 10, // 设置固定宽度
-                fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
-            };
-            Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
-            EditorGUI.LabelField(labelRect, "≡");
-            EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
-            if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
-                OnGroupDrag(group);
+
+            if (!isLock) {
+                GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
+                    alignment = TextAnchor.MiddleCenter,
+                    fixedWidth = 10, // 设置固定宽度
+                    fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
+                };
+                Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
+                EditorGUI.LabelField(labelRect, "≡");
+                EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
+                if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
+                    OnGroupDrag(group);
+                }
             }
-            
-            if (_groupBeingRenamed == group.name) {
+
+            if (_groupBeingRenamed == group.name && !isLock) {
                 // 如果这个组正在被重命名，显示文本框
                 _newGroupName = EditorGUILayout.TextField(_newGroupName, GUILayout.ExpandWidth(true));
                 if (GUILayout.Button("OK", GUILayout.Width(80)) || (Event.current.isKey && Event.current.keyCode == KeyCode.Return)) {
@@ -139,16 +198,18 @@ namespace QuickFavorites.Assets {
             } else {
                 // 显示分组的Foldout
                 IsGroupFoldout[group.name] = EditorGUILayout.Foldout(IsGroupFoldout[group.name], group.name, true);
-                if (_groupBeingRenamed == null) {
+                if (_groupBeingRenamed == null && !isLock) {
                     // 显示重命名按钮
                     if (GUILayout.Button("Rename", GUILayout.Width(80))) {
                         _groupBeingRenamed = group.name; // 激活重命名状态
                     }
                 }
             }
-            
-            if (GUILayout.Button("X", GUILayout.Width(20))) {
-                OnDeleteGroupBtnClick(group);
+
+            if (!isLock) {
+                if (GUILayout.Button("X", GUILayout.Width(20))) {
+                    OnDeleteGroupBtnClick(group);
+                }
             }
             GUILayout.EndHorizontal();
             
@@ -221,6 +282,16 @@ namespace QuickFavorites.Assets {
                     break;
             }
         }
+
+        private void UpdateSort() {
+            if (currentSortOption == SelectedSortOption) {
+                return;
+            }
+            for (int i = 0; i < Ctrl.Groups.Count; i++) {
+                Ctrl.SortGroup(Ctrl.Groups[i], SelectedSortOption);
+            }
+            currentSortOption = SelectedSortOption;
+        }
         
         private string _groupBeingRenamed;
         private string _newGroupName;
@@ -246,29 +317,33 @@ namespace QuickFavorites.Assets {
 
         #region Item相关
         private void OnItemGUI(FavoritesItemView item) {
-            Object obj = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(item.guid));
-            if (obj == null) return;
-            
+            if (!IsItemCanShow(item, FilterOptions)) {
+                return;
+            }
             GUILayout.BeginHorizontal();
 
-            GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
-                alignment = TextAnchor.MiddleCenter,
-                fixedWidth = 10, // 设置固定宽度
-                fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
-            };
-            Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
-            EditorGUI.LabelField(labelRect, "≡");
-            EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
-            if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
-                OnItemDrag(item);
+            if (CanDragItem) {
+                GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
+                    alignment = TextAnchor.MiddleCenter,
+                    fixedWidth = 10, // 设置固定宽度
+                    fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
+                };
+                Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
+                EditorGUI.LabelField(labelRect, "≡");
+                EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
+                if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
+                    OnItemDrag(item);
+                }
             }
             
-            EditorGUILayout.ObjectField(obj, typeof(Object), false);
+            EditorGUILayout.ObjectField(item.obj, typeof(Object), false);
             
             OnItemInfoGUI(item);
-            
-            if (GUILayout.Button("X", GUILayout.Width(20))) {
-                OnRemoveItemBtnClick(item);
+
+            if (!isLock) {
+                if (GUILayout.Button("X", GUILayout.Width(20))) {
+                    OnRemoveItemBtnClick(item);
+                }
             }
             
             GUILayout.EndHorizontal();
@@ -371,7 +446,6 @@ namespace QuickFavorites.Assets {
                 Ctrl.RemoveItem(item);
             }
         }
-        #endregion
         
         private static string FormatSize(long bytes) {
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
@@ -387,6 +461,35 @@ namespace QuickFavorites.Assets {
         private static string FormatDateTime(DateTime dateTime) {
             return dateTime.ToString("g"); // 使用短日期格式和短时间格式
         }
+
+        private static bool IsItemCanShow(FavoritesItemView itemView, AssetFilterOptions filterOptions) {
+            if (!string.IsNullOrEmpty(searchString) && !itemView.name.Contains(searchString)) {
+                return false;
+            }
+            
+            // 如果选择“All”，则显示所有资源
+            if (filterOptions == AssetFilterOptions.Everything) return true;
+            Type assetType = AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GUIDToAssetPath(itemView.guid));
+            if (assetType == typeof(AnimationClip) && filterOptions.HasFlag(AssetFilterOptions.AnimationClip)) return true;
+            if (assetType == typeof(AudioClip) && filterOptions.HasFlag(AssetFilterOptions.AudioClip)) return true;
+            if (assetType == typeof(AudioMixer) && filterOptions.HasFlag(AssetFilterOptions.AudioMixer)) return true;
+            if (assetType == typeof(ComputeShader) && filterOptions.HasFlag(AssetFilterOptions.ComputeShader)) return true;
+            if (assetType == typeof(Font) && filterOptions.HasFlag(AssetFilterOptions.Font)) return true;
+            if (assetType == typeof(GUISkin) && filterOptions.HasFlag(AssetFilterOptions.GUISkin)) return true;
+            if (assetType == typeof(Material) && filterOptions.HasFlag(AssetFilterOptions.Material)) return true;
+            if (assetType == typeof(Mesh) && filterOptions.HasFlag(AssetFilterOptions.Mesh)) return true;
+            if (itemView.type == ".fbx" && filterOptions.HasFlag(AssetFilterOptions.Model)) return true;
+            if (assetType == typeof(PhysicMaterial) && filterOptions.HasFlag(AssetFilterOptions.PhysicMaterial)) return true;
+            if (assetType == typeof(SceneAsset) && filterOptions.HasFlag(AssetFilterOptions.Scene)) return true;
+            if (assetType == typeof(MonoScript) && filterOptions.HasFlag(AssetFilterOptions.Script)) return true;
+            if (assetType == typeof(Shader) && filterOptions.HasFlag(AssetFilterOptions.Shader)) return true;
+            if (assetType == typeof(Sprite) && filterOptions.HasFlag(AssetFilterOptions.Sprite)) return true;
+            if (assetType == typeof(Texture) && filterOptions.HasFlag(AssetFilterOptions.Texture)) return true;
+            if (assetType == typeof(VideoClip) && filterOptions.HasFlag(AssetFilterOptions.VideoClip)) return true;
+            return false;
+        }
+
+        #endregion
     }
 }
 

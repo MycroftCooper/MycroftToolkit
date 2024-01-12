@@ -40,7 +40,6 @@ namespace QuickFavorites.Assets {
             string dataFilePath = Path.Combine(folderPath, DataFileName);
             string json = JsonUtility.ToJson(this, true);
             File.WriteAllText(dataFilePath, json);
-            Debug.Log(Application.persistentDataPath);
         }
 
         public bool AddItem(FavoritesItemData item, FavoritesGroupData group, int index = -1) {
