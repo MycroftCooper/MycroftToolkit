@@ -53,6 +53,7 @@ namespace QuickFavorites.Navigation {
             }
             string targetPath = _forwardStack.First.Value;
             ProjectNavigationExtension.SetProjectWindowPath(Window, targetPath);
+            OnWindowPathChange(targetPath);
         }
 
         public void Back() {
@@ -61,37 +62,67 @@ namespace QuickFavorites.Navigation {
             }
             string targetPath = _backStack.First.Value;
             ProjectNavigationExtension.SetProjectWindowPath(Window, targetPath);
+            OnWindowPathChange(targetPath);
         }
     }
     
     [InitializeOnLoad]
     public static class ProjectNavigationExtension {
-        public static int StackSize = 64;
+        public const int StackSize = 64;
         public static Dictionary<EditorWindow, ProjectNavigation> WindowDict;
-        private static readonly Type ProjectWindowType = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
+        
+        private static readonly Type ProjectWindowType;
+        private static readonly MethodInfo GetActiveFolderPathMethod;
+        private static readonly MethodInfo ShowFolderContents;
         
         static ProjectNavigationExtension() {
-            WindowDict = new Dictionary<EditorWindow, ProjectNavigation>();
-            EditorApplication.update += TrackProjectWindowPaths;
+            ProjectWindowType = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
+            GetActiveFolderPathMethod = ProjectWindowType.GetMethod("GetActiveFolderPath", BindingFlags.NonPublic | BindingFlags.Instance);
+            ShowFolderContents = ProjectWindowType.GetMethod("ShowFolderContents", BindingFlags.NonPublic | BindingFlags.Instance);
+            IsEnable = EditorPrefs.GetBool("ProjectNavigationExtensionEnable");
         }
-        
-        private static void TrackProjectWindowPaths() {
-            var projectWindows = Resources.FindObjectsOfTypeAll(ProjectWindowType);
-            foreach (var o in projectWindows) {
-                var window = (EditorWindow)o;
-                WindowDict.TryGetValue(window, out ProjectNavigation navigation);
-                if (navigation == null) {
-                    navigation = new ProjectNavigation(window);
-                    WindowDict.Add(window, navigation);
+
+        #region 开关相关
+        private static bool _isEnable;
+        public static bool IsEnable {
+            get => _isEnable;
+            set {
+                if (value == _isEnable) {
+                    return;
                 }
-                string currentPath = GetProjectWindowPath(window);
-                navigation.OnWindowPathChange(currentPath);
+
+                _isEnable = value;
+                if (_isEnable) {
+                    WindowDict = new Dictionary<EditorWindow, ProjectNavigation>();
+                    EditorApplication.update += TrackProjectWindowPaths;
+                } else {
+                    WindowDict.Clear();
+                    WindowDict = null;
+                    EditorApplication.update -= TrackProjectWindowPaths;
+                }
+                EditorPrefs.SetBool("ProjectNavigationExtensionEnable", value);
             }
         }
         
+        [MenuItem("Edit/ProjectNavigationExtension/Enable")]
+        private static void SetEnable() => IsEnable = true;
+        
+        [MenuItem("Edit/ProjectNavigationExtension/Disable")]
+        private static void SetDisable()  => IsEnable = false;
+
+        [MenuItem("Edit/ProjectNavigationExtension/Enable", true)]
+        private static bool CanEnable() => !IsEnable;
+        
+        [MenuItem("Edit/ProjectNavigationExtension/Disable", true)]
+        private static bool CanDisable()  => IsEnable;
+        #endregion
+        
         // 定义前进快捷键
-        [MenuItem("Edit/ProjectNavigationExtension/Forward &RIGHT", false, 1)]
+        [MenuItem("Edit/ProjectNavigationExtension/Forward &RIGHT", false, 0)]
         private static void Forward() {
+            if (!_isEnable) {
+                return;
+            }
             var projectWindow = GetActiveProjectWindow();
             if (projectWindow == null) {
                 return;
@@ -105,8 +136,11 @@ namespace QuickFavorites.Navigation {
         }
         
         // 定义后退快捷键
-        [MenuItem("Edit/ProjectNavigationExtension/Back _&LEFT", false, 0)]
+        [MenuItem("Edit/ProjectNavigationExtension/Back _&LEFT", false, 1)]
         private static void Back() {
+            if (!_isEnable) {
+                return;
+            }
             var projectWindow = GetActiveProjectWindow();
             if (projectWindow == null) {
                 return;
@@ -117,6 +151,26 @@ namespace QuickFavorites.Navigation {
                 return;
             }
             navigation.Back();
+        }
+        
+        private static float _lastCheckTime;
+        private const float CHECK_INTERVAL = 0.3f;
+        private static void TrackProjectWindowPaths() {
+            if (Time.realtimeSinceStartup - _lastCheckTime < CHECK_INTERVAL) {
+                return;
+            }
+            _lastCheckTime = Time.realtimeSinceStartup;
+            var projectWindows = Resources.FindObjectsOfTypeAll(ProjectWindowType);
+            foreach (var o in projectWindows) {
+                var window = (EditorWindow)o;
+                WindowDict.TryGetValue(window, out ProjectNavigation navigation);
+                if (navigation == null) {
+                    navigation = new ProjectNavigation(window);
+                    WindowDict.Add(window, navigation);
+                }
+                string currentPath = GetProjectWindowPath(window);
+                navigation.OnWindowPathChange(currentPath);
+            }
         }
 
         private static EditorWindow GetActiveProjectWindow() {
@@ -133,12 +187,11 @@ namespace QuickFavorites.Navigation {
                 return null;
             }
             
-            var methodInfo = ProjectWindowType.GetMethod("GetActiveFolderPath", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (methodInfo == null) {
+            if (GetActiveFolderPathMethod == null) {
                 Debug.LogError("Unity source code has changed, reflection failed!");
                 return null;
             }
-            string path = methodInfo.Invoke(projectWindow, null) as string;
+            string path = GetActiveFolderPathMethod.Invoke(projectWindow, null) as string;
             return path;
         }
 
@@ -147,14 +200,14 @@ namespace QuickFavorites.Navigation {
                 Debug.LogError("ProjectWindow cant be null");
                 return;
             }
-            var showFolderContentsMethod = ProjectWindowType.GetMethod("ShowFolderContents", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (showFolderContentsMethod == null) {
+            
+            if (ShowFolderContents == null) {
                 Debug.LogError("Unity source code has changed, reflection failed!");
                 return;
             }
             // 获取文件夹的实例ID
             var folderInstanceId = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path).GetInstanceID();
-            showFolderContentsMethod.Invoke(projectWindow, new object[] { folderInstanceId, false });
+            ShowFolderContents.Invoke(projectWindow, new object[] { folderInstanceId, false });
         }
     }
 }
