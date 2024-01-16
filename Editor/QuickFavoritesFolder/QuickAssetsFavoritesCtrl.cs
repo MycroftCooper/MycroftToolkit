@@ -191,17 +191,17 @@ namespace QuickFavorites.Assets {
             
             // 获取文件信息
             FileInfo fileInfo = new FileInfo(path);
-            if (!fileInfo.Exists) {
+            bool isDirectory = fileInfo.Attributes == FileAttributes.Directory;
+            if (!isDirectory && !fileInfo.Exists) {
                 Debug.LogError("File does not exist: " + path);
                 return null;
-                
             } 
             var view = new FavoritesItemView {
                 obj = obj,
                 guid = objGuid,
                 name = obj.name,
-                size = fileInfo.Length,
-                type = fileInfo.Extension,
+                size = isDirectory? -1 : fileInfo.Length,
+                type = isDirectory? "directory" : fileInfo.Extension,
                 lastAccessTime = fileInfo.LastAccessTimeUtc.Ticks,
                 lastModifiedTime = fileInfo.LastWriteTimeUtc.Ticks
             };

@@ -32,6 +32,7 @@ namespace QuickFavorites.Assets {
         Sprite = 1 << 14,
         Texture = 1 << 15,
         VideoClip = 1 << 16,
+        Directory = 1 << 17,
     }
     
     [Serializable]
@@ -477,6 +478,7 @@ namespace QuickFavorites.Assets {
             
             // 如果选择“All”，则显示所有资源
             if (filterOptions == AssetFilterOptions.Everything) return true;
+            if (filterOptions == AssetFilterOptions.None) return false;
             Type assetType = AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GUIDToAssetPath(itemView.guid));
             if (assetType == typeof(AnimationClip) && filterOptions.HasFlag(AssetFilterOptions.AnimationClip)) return true;
             if (assetType == typeof(AudioClip) && filterOptions.HasFlag(AssetFilterOptions.AudioClip)) return true;
@@ -494,6 +496,7 @@ namespace QuickFavorites.Assets {
             if (assetType == typeof(Sprite) && filterOptions.HasFlag(AssetFilterOptions.Sprite)) return true;
             if (assetType == typeof(Texture) && filterOptions.HasFlag(AssetFilterOptions.Texture)) return true;
             if (assetType == typeof(VideoClip) && filterOptions.HasFlag(AssetFilterOptions.VideoClip)) return true;
+            if (itemView.type == "directory" && filterOptions.HasFlag(AssetFilterOptions.Directory)) return true;
             return false;
         }
 
