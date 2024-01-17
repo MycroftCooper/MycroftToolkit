@@ -76,6 +76,12 @@ namespace QuickFavorites.Assets {
         private static bool CanDragItem => !isLock && SelectedSortOption == SortOption.CustomOrder;
         public readonly Dictionary<string, bool> IsGroupFoldout = new Dictionary<string, bool>();
         private Vector2 _scrollPosition;
+        
+        private static readonly GUIStyle DragHandleStyle = new GUIStyle(GUI.skin.label) {
+            alignment = TextAnchor.MiddleCenter,
+            fixedWidth = 10, // 设置固定宽度
+            fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
+        };
 
         #region 菜单相关
         [MenuItem("Window/QuickAssetsFavorites")]
@@ -191,12 +197,7 @@ namespace QuickFavorites.Assets {
             GUILayout.BeginHorizontal();
 
             if (!isLock) {
-                GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
-                    alignment = TextAnchor.MiddleCenter,
-                    fixedWidth = 10, // 设置固定宽度
-                    fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
-                };
-                Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
+                Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), DragHandleStyle);
                 EditorGUI.LabelField(labelRect, "≡");
                 EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
                 if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
@@ -337,12 +338,7 @@ namespace QuickFavorites.Assets {
             GUILayout.BeginHorizontal();
 
             if (CanDragItem) {
-                GUIStyle dragHandleStyle = new GUIStyle(GUI.skin.label) {
-                    alignment = TextAnchor.MiddleCenter,
-                    fixedWidth = 10, // 设置固定宽度
-                    fixedHeight = EditorGUIUtility.singleLineHeight // 设置固定高度
-                };
-                Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), dragHandleStyle);
+                Rect labelRect = GUILayoutUtility.GetRect(new GUIContent("≡"), DragHandleStyle);
                 EditorGUI.LabelField(labelRect, "≡");
                 EditorGUIUtility.AddCursorRect(labelRect, MouseCursor.Pan);
                 if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition)) {
@@ -351,7 +347,13 @@ namespace QuickFavorites.Assets {
             }
             
             EditorGUILayout.ObjectField(item.Obj, typeof(Object), false);
-
+            
+            if (GUILayout.Button("Open", GUILayout.Width(50))) {
+                string path = AssetDatabase.GetAssetPath(item.Obj);
+                path = Path.GetFullPath(path);
+                Process.Start(path);
+            }
+            
             OnItemInfoGUI(item);
 
             if (!isLock) {
