@@ -9,6 +9,7 @@ namespace QuickFavorites.Assets {
     public class FavoritesItemData {
         public string guid;
         public string name;
+        public string note;
     }
 
     [Serializable]
@@ -43,6 +44,21 @@ namespace QuickFavorites.Assets {
             File.WriteAllText(dataFilePath, json);
         }
 
+        #region Item操作
+        public FavoritesItemData FindItem(string groupName, string itemGuid) {
+            var group = FindGroup(groupName);
+            if (group == null) {
+                return null;
+            }
+            var item = FindItem(group, itemGuid);
+            return item;
+        }
+
+        public FavoritesItemData FindItem(FavoritesGroupData group, string itemGuid) {
+            var item = group.items.Find(i => i.guid == itemGuid);
+            return item;
+        }
+        
         public bool AddItem(FavoritesItemData item, FavoritesGroupData group, int index = -1) {
             if (item == null) {
                 Debug.LogError("QuickFavoritesFolder>AddItem>Item shouldn't be null!");
@@ -76,6 +92,24 @@ namespace QuickFavorites.Assets {
             }
             var group = FindGroup(targetGroup) ?? AddNewGroup(targetGroup);
             return AddItem(item, group, index);
+        }
+
+        public bool ChangeItemNote(FavoritesItemData item, string newNoteStr) {
+            if (item == null) {
+                Debug.LogError("QuickFavoritesFolder>ChangeItemNote>Item shouldn't be null!");
+                return false;
+            }
+            if (newNoteStr == null) {
+                Debug.LogError("QuickFavoritesFolder>ChangeItemNote>newNoteStr shouldn't be null!");
+                return false;
+            }
+
+            if (item.note == newNoteStr) {
+                return true;
+            }
+            item.note = newNoteStr;
+            Save();
+            return true;
         }
 
         public bool RemoveItem(FavoritesItemData item, FavoritesGroupData group) {
@@ -117,7 +151,9 @@ namespace QuickFavorites.Assets {
             } 
             return RemoveItem(targetItem, group);
         }
+        #endregion
 
+        #region Group操作
         public FavoritesGroupData AddNewGroup(string newGroupName) {
             if (Groups.Any(g => g.name == newGroupName)) {
                 Debug.LogError($"QuickFavoritesFolder>AddGroup>Group of the same name[{newGroupName}] already exists!");
@@ -183,19 +219,6 @@ namespace QuickFavorites.Assets {
             FavoritesGroupData group = Groups.Find(g => g.name == groupName);
             return group;
         }
-
-        public FavoritesItemData FindItem(string groupName, string itemGuid) {
-            var group = FindGroup(groupName);
-            if (group == null) {
-                return null;
-            }
-            var item = FindItem(group, itemGuid);
-            return item;
-        }
-
-        public FavoritesItemData FindItem(FavoritesGroupData group, string itemGuid) {
-            var item = group.items.Find(i => i.guid == itemGuid);
-            return item;
-        }
+        #endregion
     }
 }

@@ -22,14 +22,14 @@ namespace QuickFavorites.Assets {
                 return null;
             }
             FavoritesGroupView view = new FavoritesGroupView {
-                name = data.name,
-                items = new List<FavoritesItemView>()
+                Name = data.name,
+                Items = new List<FavoritesItemView>()
             };
             foreach (var item in data.items) {
                 var itemView = ItemDataToView(item);
                 if (itemView == null) continue;
-                itemView.groupName = view.name;
-                view.items.Add(itemView);
+                itemView.GroupName = view.Name;
+                view.Items.Add(itemView);
             }
             return view;
         }
@@ -39,10 +39,10 @@ namespace QuickFavorites.Assets {
                 return null;
             }
             FavoritesGroupData data = new FavoritesGroupData {
-                name = view.name,
+                name = view.Name,
                 items = new List<FavoritesItemData>()
             };
-            foreach (var item in view.items) {
+            foreach (var item in view.Items) {
                 var itemData = ItemViewToData(item);
                 if (itemData != null) {
                     data.items.Add(itemData);
@@ -61,45 +61,49 @@ namespace QuickFavorites.Assets {
         }
 
         public FavoritesGroupView FindGroupView(string groupName) {
-            var group = Groups.Find(g => g.name == groupName);
+            var group = Groups.Find(g => g.Name == groupName);
             return group;
         }
         
         public void SortGroup(FavoritesGroupView group, SortOption sortOption) {
             switch (sortOption) {
-                case SortOption.Name:
-                    group.items = group.items.OrderBy(item => item.name).ToList();
-                    break;
-                case SortOption.Size:
-                    group.items = group.items.OrderBy(item => item.size).ToList();
-                    break;
-                case SortOption.FileType:
-                    group.items = group.items.OrderBy(item => item.type).ToList();
-                    break;
                 case SortOption.CustomOrder:
                     var itemViews = new List<FavoritesItemView>();
-                    var oldItemViewsDict = group.items.ToDictionary(item => item.guid, item => item);
-                    var groupData = Model.FindGroup(group.name);
+                    var oldItemViewsDict = group.Items.ToDictionary(item => item.Guid, item => item);
+                    var groupData = Model.FindGroup(group.Name);
                     var itemDataList = groupData.items;
                     foreach (var itemData in itemDataList) {
                         string guid = itemData.guid;
                         var targetItemView = oldItemViewsDict[guid];
                         itemViews.Add(targetItemView);
                     }
-                    group.items = itemViews;
+                    group.Items = itemViews;
+                    break;
+                case SortOption.Name:
+                    group.Items = group.Items.OrderBy(item => item.Name).ToList();
+                    break;
+                case SortOption.Size:
+                    group.Items = group.Items.OrderBy(item => item.Size).ToList();
+                    break;
+                case SortOption.FileType:
+                    group.Items = group.Items.OrderBy(item => item.Type).ToList();
+                    break;
+                case SortOption.Note:
+                    group.Items = group.Items.OrderBy(item => item.Note).ToList();
                     break;
                 case SortOption.LastAccessTime:
-                    group.items = group.items.OrderBy(item => item.lastAccessTime).ToList();
+                    group.Items = group.Items.OrderBy(item => item.LastAccessTime).ToList();
                     break;
                 case SortOption.LastModifiedTime:
-                    group.items = group.items.OrderBy(item => item.lastModifiedTime).ToList();
+                    group.Items = group.Items.OrderBy(item => item.LastModifiedTime).ToList();
                     break;
             }
         }
         
         public FavoritesGroupView AddGroup(string groupName) {
-            if (Groups.Any(g => g.name == groupName)) {
-                Debug.LogError($"QuickFavoritesFolder>AddGroup>Group of the same name[{groupName}] already exists!");
+            if (Groups.Any(g => g.Name == groupName)) {
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>AddGroup", 
+                    $"Group of the same name[{groupName}] already exists!", "OK");
                 return null;
             }
 
@@ -115,26 +119,26 @@ namespace QuickFavorites.Assets {
         
         public void RenameGroup(FavoritesGroupView group, string newName) {
             if (string.IsNullOrEmpty(newName)) return;
-            if (!Model.RenameGroup(group.name, newName)) return;
-            group.name = newName;
-            foreach (var item in group.items) {
-                item.groupName = newName;
+            if (!Model.RenameGroup(group.Name, newName)) return;
+            group.Name = newName;
+            foreach (var item in group.Items) {
+                item.GroupName = newName;
             }
         }
         
         public void DeleteGroup(FavoritesGroupView group) {
-            if (Model.DeleteGroup(group.name)) {
+            if (Model.DeleteGroup(group.Name)) {
                 Groups.Remove(group);
             }
         }
         
-        public void ChangeGroupOrderInGroup(FavoritesGroupView group, int newOrder, bool isReverse) {
+        public void ChangeGroupOrderInGroup(FavoritesGroupView group, int newOrder) {
             if (group == null) {
-                Debug.LogError($"QuickFavoritesFolder>ChangeItemOrder>Group cant be null!");
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>ChangeItemOrder", "Group cant be null!", "OK");
                 return;
             }
             newOrder = newOrder == -1 ? Model.Groups.Count : newOrder;
-            FavoritesGroupData groupData = Model.FindGroup(group.name);
+            FavoritesGroupData groupData = Model.FindGroup(group.Name);
             bool isSuccesses = Model.ChangeGroupOrder(groupData, newOrder);
             if (!isSuccesses) {
                 return;
@@ -152,6 +156,7 @@ namespace QuickFavorites.Assets {
             string assetPath = AssetDatabase.GUIDToAssetPath(data.guid);
             Object obj = AssetDatabase.LoadAssetAtPath<Object>(assetPath);
             FavoritesItemView view = ObjectToItemView(obj);
+            view.Note = data.note;
             return view;
         }
         
@@ -161,8 +166,9 @@ namespace QuickFavorites.Assets {
             }
 
             FavoritesItemData data = new FavoritesItemData {
-                guid = view.guid,
-                name = view.name
+                guid = view.Guid,
+                name = view.Name,
+                note = view.Note
             };
             return data;
         }
@@ -177,7 +183,8 @@ namespace QuickFavorites.Assets {
 
             var data = new FavoritesItemData() {
                 guid = objGuid,
-                name = obj.name
+                name = obj.name,
+                note = ""
             };
             return data;
         }
@@ -197,27 +204,29 @@ namespace QuickFavorites.Assets {
                 return null;
             } 
             var view = new FavoritesItemView {
-                obj = obj,
-                guid = objGuid,
-                name = obj.name,
-                size = isDirectory? -1 : fileInfo.Length,
-                type = isDirectory? "directory" : fileInfo.Extension,
-                lastAccessTime = fileInfo.LastAccessTimeUtc.Ticks,
-                lastModifiedTime = fileInfo.LastWriteTimeUtc.Ticks
+                Obj = obj,
+                Guid = objGuid,
+                Name = obj.name,
+                Size = isDirectory? -1 : fileInfo.Length,
+                Type = isDirectory? "directory" : fileInfo.Extension,
+                LastAccessTime = fileInfo.LastAccessTimeUtc.Ticks,
+                LastModifiedTime = fileInfo.LastWriteTimeUtc.Ticks
             };
             return view;
         }
         
         public void AddItem(Object obj, string groupName, int index = -1) {
             if (obj == null) {
-                Debug.LogError("QuickFavoritesFolder>AddItem>Added Items cannot be null!");
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>AddItem", 
+                    "Added Items cannot be null!", "OK");
                 return;
             }
             var targetGroupView = FindGroupView(groupName) ?? AddGroup(groupName);
             string path = AssetDatabase.GetAssetPath(obj);
             string objGuid = AssetDatabase.AssetPathToGUID(path);
-            if (targetGroupView.items.Any(i => i.guid == objGuid)) {
-                Debug.LogError($"QuickFavoritesFolder>AddItem>Item [{obj.name}] with GUID {objGuid} already exists in group {groupName}!");
+            if (targetGroupView.Items.Any(i => i.Guid == objGuid)) {
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>AddItem", 
+                    $"Item [{obj.name}] with GUID {objGuid} already exists in group {groupName}!", "OK");
                 return;
             }
             
@@ -227,24 +236,26 @@ namespace QuickFavorites.Assets {
                 return;
             }
             FavoritesItemView itemView = ItemDataToView(itemData);
-            itemView.groupName = groupName;
-            index = index == -1 ? targetGroupView.items.Count : index;
-            targetGroupView.items.Insert(index, itemView);
+            itemView.GroupName = groupName;
+            index = index == -1 ? targetGroupView.Items.Count : index;
+            targetGroupView.Items.Insert(index, itemView);
             SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOption);
         }
 
-        public void ChangeItemOrderInGroup(FavoritesGroupView group, FavoritesItemView item, int newOrder, bool isReverse) {
+        public void ChangeItemOrderInGroup(FavoritesGroupView group, FavoritesItemView item, int newOrder) {
             if (item == null) {
-                Debug.LogError("QuickFavoritesFolder>ChangeItemOrder>Item cannot be null!");
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>ChangeItemOrder", 
+                    "Item cannot be null!", "OK");
                 return;
             }
             if (group == null) {
-                Debug.LogError($"QuickFavoritesFolder>ChangeItemOrder>Group[{item.groupName}] not exist!");
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>ChangeItemOrder", 
+                    $"Group[{item.GroupName}] not exist!", "OK");
                 return;
             }
 
-            FavoritesGroupData groupData = Model.FindGroup(group.name);
-            FavoritesItemData itemData = Model.FindItem(groupData, item.guid);
+            FavoritesGroupData groupData = Model.FindGroup(group.Name);
+            FavoritesItemData itemData = Model.FindItem(groupData, item.Guid);
             bool isSuccesses = Model.RemoveItem(itemData, groupData);
             if (!isSuccesses) {
                 return;
@@ -254,26 +265,28 @@ namespace QuickFavorites.Assets {
                 return;
             }
 
-            group.items.Remove(item);
-            newOrder = newOrder == -1 ? group.items.Count : newOrder;
-            group.items.Insert(newOrder, item);
+            group.Items.Remove(item);
+            newOrder = newOrder == -1 ? group.Items.Count : newOrder;
+            group.Items.Insert(newOrder, item);
         }
 
         public void ChangeItemGroup(FavoritesItemView item, string targetGroupName, int index = -1) {
             if (item == null) {
-                Debug.LogError("QuickFavoritesFolder>ChangeItemGroup>Item cannot be null!");
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>ChangeItemGroup", 
+                    "Item cannot be null!", "OK");
                 return;
             }
             var targetGroupView = FindGroupView(targetGroupName) ?? AddGroup(targetGroupName);
-            if (targetGroupView.items.Any(i => i.guid == item.guid)) {
-                Debug.LogError($"QuickFavoritesFolder>ChangeItemGroup>Item [{item.name}] with GUID {item.guid} already exists in group {targetGroupName}!");
+            if (targetGroupView.Items.Any(i => i.Guid == item.Guid)) {
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>ChangeItemGroup", 
+                    $"Item [{item.Name}] with GUID {item.Guid} already exists in group {targetGroupName}!", "OK");
                 return;
             }
-            var oldGroupView = FindGroupView(item.groupName);
+            var oldGroupView = FindGroupView(item.GroupName);
 
-            FavoritesItemData targetItemData = Model.FindItem(item.groupName, item.guid);
+            FavoritesItemData targetItemData = Model.FindItem(item.GroupName, item.Guid);
             FavoritesGroupData targetGroupData = Model.FindGroup(targetGroupName);
-            FavoritesGroupData oldGroupData = Model.FindGroup(item.groupName);
+            FavoritesGroupData oldGroupData = Model.FindGroup(item.GroupName);
             bool isSuccesses = Model.AddItem(targetItemData, targetGroupData, index);
             if (!isSuccesses) {
                 return;
@@ -283,24 +296,44 @@ namespace QuickFavorites.Assets {
                 return;
             }
             
-            index = index == -1 ? targetGroupView.items.Count : index;
-            targetGroupView.items.Insert(index, item);
-            oldGroupView.items.Remove(item);
-            item.groupName = targetGroupName;
+            index = index == -1 ? targetGroupView.Items.Count : index;
+            targetGroupView.Items.Insert(index, item);
+            oldGroupView.Items.Remove(item);
+            item.GroupName = targetGroupName;
             SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOption);
+        }
+
+        public void ChangeItemNote(FavoritesItemView item, string newNoteStr) {
+            if (item == null) {
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>ChangeItemNote", 
+                    "Item cannot be null!", "OK");
+                return;
+            }
+            if (item.Note == newNoteStr) {
+                return;
+            }
+            newNoteStr ??= "";
+            FavoritesItemData itemData = Model.FindItem(item.GroupName, item.Guid);
+            bool isSuccesses = Model.ChangeItemNote(itemData, newNoteStr);
+            if (!isSuccesses) {
+                return;
+            }
+
+            item.Note = newNoteStr;
         }
         
         public void RemoveItem(FavoritesItemView item) {
             if (item == null) {
-                Debug.LogError("QuickFavoritesFolder>AddItem>Remove Item cannot be null!");
+                EditorUtility.DisplayDialog("QuickFavoritesFolder>RemoveItem", 
+                    "Item cannot be null!", "OK");
                 return;
             }
-            bool isSuccesses = Model.RemoveItem(item.guid, item.groupName);
+            bool isSuccesses = Model.RemoveItem(item.Guid, item.GroupName);
             if (!isSuccesses) {
                 return;
             }
-            var groupView = FindGroupView(item.groupName);
-            groupView.items.Remove(item);
+            var groupView = FindGroupView(item.GroupName);
+            groupView.Items.Remove(item);
         }
         #endregion
     }

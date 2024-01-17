@@ -9,7 +9,7 @@ using UnityEngine.Video;
 using Object = UnityEngine.Object;
 
 namespace QuickFavorites.Assets {
-    public enum SortOption { CustomOrder, Name, Size, FileType, LastAccessTime, LastModifiedTime}
+    public enum SortOption { CustomOrder, Name, Size, FileType, Note, LastAccessTime, LastModifiedTime}
     
     [Flags] // 允许枚举值组合
     public enum AssetFilterOptions {
@@ -35,22 +35,21 @@ namespace QuickFavorites.Assets {
         Directory = 1 << 17,
     }
     
-    [Serializable]
     public class FavoritesItemView {
-        public Object obj;
-        public string guid;
-        public string name;
-        public string groupName;
-        public long size;
-        public string type;
-        public long lastAccessTime;
-        public long lastModifiedTime;
+        public Object Obj;
+        public string Guid;
+        public string Name;
+        public string Note;
+        public string GroupName;
+        public long Size;
+        public string Type;
+        public long LastAccessTime;
+        public long LastModifiedTime;
     }
-
-    [Serializable]
+    
     public class FavoritesGroupView {
-        public string name;
-        public List<FavoritesItemView> items;
+        public string Name;
+        public List<FavoritesItemView> Items;
     }
     
     public class QuickAssetsFavoritesView : EditorWindow {
@@ -68,13 +67,15 @@ namespace QuickFavorites.Assets {
         private bool _isShowFileType;
         private bool _isShowLastAccessTime;
         private bool _isShowLastModifiedTime;
+        private bool _isShowNotes;
+
         private static readonly GUILayoutOption ToggleWidth = GUILayout.Width(120);
         
         private static string searchString = "";
         
         private static bool CanDragItem => !isLock && SelectedSortOption == SortOption.CustomOrder;
         public readonly Dictionary<string, bool> IsGroupFoldout = new Dictionary<string, bool>();
-        private Vector2 scrollPosition;
+        private Vector2 _scrollPosition;
 
         #region 菜单相关
         [MenuItem("Window/QuickAssetsFavorites")]
@@ -110,6 +111,7 @@ namespace QuickFavorites.Assets {
             UpdateSort();
             
             GUILayout.BeginHorizontal();
+            _isShowNotes = EditorGUILayout.ToggleLeft("Notes", _isShowNotes, ToggleWidth);
             _isShowFileType = EditorGUILayout.ToggleLeft("Type", _isShowFileType, ToggleWidth);
             _isShowFileSize = EditorGUILayout.ToggleLeft("Size", _isShowFileSize, ToggleWidth);
             _isShowLastAccessTime = EditorGUILayout.ToggleLeft("LastAccessTime", _isShowLastAccessTime, ToggleWidth);
@@ -132,7 +134,7 @@ namespace QuickFavorites.Assets {
 
             OnTableHeadGUI();
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
             for (var index = 0; index < Ctrl.Groups.Count; index++) {
                 OnInsertGroupGUI(index);
                 var group = Ctrl.Groups[index];
@@ -150,8 +152,10 @@ namespace QuickFavorites.Assets {
             if (!_isShowFileSize && !_isShowFileType && !_isShowLastAccessTime && !_isShowLastModifiedTime) return;
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(10));
             GUILayout.BeginHorizontal();
-            
-            GUILayout.Label("", GUILayout.Width(20));// 空出来对齐拖拽按钮
+
+            if (CanDragItem) {
+                GUILayout.Label("", GUILayout.Width(20));// 空出来对齐拖拽按钮
+            }
             GUILayout.Label("Item", EditorStyles.boldLabel);
             if (_isShowFileType) {
                 GUILayout.Label(" | Type", EditorStyles.boldLabel, GUILayout.Width(100));
@@ -178,8 +182,8 @@ namespace QuickFavorites.Assets {
         
         #region Group相关
         private void OnGroupGUI(FavoritesGroupView group) {
-            if (!IsGroupFoldout.ContainsKey(group.name)) {
-                IsGroupFoldout.Add(group.name, true);
+            if (!IsGroupFoldout.ContainsKey(group.Name)) {
+                IsGroupFoldout.Add(group.Name, true);
             }
             
             Rect groupRect = EditorGUILayout.BeginVertical();// 开始渲染分组区域
@@ -200,7 +204,7 @@ namespace QuickFavorites.Assets {
                 }
             }
 
-            if (_groupBeingRenamed == group.name && !isLock) {
+            if (_groupBeingRenamed == group.Name && !isLock) {
                 // 如果这个组正在被重命名，显示文本框
                 _newGroupName = EditorGUILayout.TextField(_newGroupName, GUILayout.ExpandWidth(true));
                 if (GUILayout.Button("OK", GUILayout.Width(80)) || (Event.current.isKey && Event.current.keyCode == KeyCode.Return)) {
@@ -208,11 +212,11 @@ namespace QuickFavorites.Assets {
                 }
             } else {
                 // 显示分组的Foldout
-                IsGroupFoldout[group.name] = EditorGUILayout.Foldout(IsGroupFoldout[group.name], group.name, true);
+                IsGroupFoldout[group.Name] = EditorGUILayout.Foldout(IsGroupFoldout[group.Name], group.Name, true);
                 if (string.IsNullOrEmpty(_groupBeingRenamed) && !isLock) {
                     // 显示重命名按钮
                     if (GUILayout.Button("Rename", GUILayout.Width(80))) {
-                        _groupBeingRenamed = group.name; // 激活重命名状态
+                        _groupBeingRenamed = group.Name; // 激活重命名状态
                     }
                 }
             }
@@ -229,18 +233,18 @@ namespace QuickFavorites.Assets {
                 GUI.Box(groupRect, GUIContent.none, EditorStyles.helpBox);
             }
 
-            if (IsGroupFoldout[group.name]) {
-                if (group.items.Count == 0) {
+            if (IsGroupFoldout[group.Name]) {
+                if (group.Items.Count == 0) {
                     GUILayout.Space(50); // 提供足够的空间用于拖拽
                 } else {
-                    for (var index = IsOrderReverse? group.items.Count - 1 : 0; 
-                         IsOrderReverse? index >= 0 : index < group.items.Count; 
+                    for (var index = IsOrderReverse? group.Items.Count - 1 : 0; 
+                         IsOrderReverse? index >= 0 : index < group.Items.Count; 
                          index = IsOrderReverse? index - 1: index + 1) {
-                        var item = group.items[index];
+                        var item = group.Items[index];
                         OnInsertItemGUI(group, index);
                         OnItemGUI(item);
                     }
-                    OnInsertItemGUI(group, group.items.Count);
+                    OnInsertItemGUI(group, group.Items.Count);
                 }
             }
             OnItemDrop(groupRect, group);
@@ -264,7 +268,7 @@ namespace QuickFavorites.Assets {
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.objectReferences = null;
             DragAndDrop.SetGenericData("DraggingGroup", group);
-            DragAndDrop.StartDrag(group.name);
+            DragAndDrop.StartDrag(group.Name);
             Event.current.Use();
         }
         
@@ -288,7 +292,7 @@ namespace QuickFavorites.Assets {
                     if (index != -1 && group != null) {
                         targetIndex = GetInsertionIndex(dropArea, Ctrl.Groups,group, index);
                     }
-                    Ctrl.ChangeGroupOrderInGroup(group, targetIndex, false); // 添加到指定分组
+                    Ctrl.ChangeGroupOrderInGroup(group, targetIndex); // 添加到指定分组
                     break;
             }
         }
@@ -311,15 +315,15 @@ namespace QuickFavorites.Assets {
             
             if (string.IsNullOrEmpty(newName)) return;
             
-            bool isFoldOut = IsGroupFoldout[group.name];
-            IsGroupFoldout.Remove(group.name);
+            bool isFoldOut = IsGroupFoldout[group.Name];
+            IsGroupFoldout.Remove(group.Name);
             Ctrl.RenameGroup(group, newName);
-            IsGroupFoldout.Add(group.name, isFoldOut);
+            IsGroupFoldout.Add(group.Name, isFoldOut);
         }
         
         private void OnDeleteGroupBtnClick(FavoritesGroupView group) {
             if (EditorUtility.DisplayDialog("Confirm Delete Group", 
-                    $"Are you sure you want to delete the group '{group.name}'?", "Delete", "Cancel")) {
+                    $"Are you sure you want to delete the group '{group.Name}'?", "Delete", "Cancel")) {
                 Ctrl.DeleteGroup(group);
             }
         }
@@ -346,8 +350,8 @@ namespace QuickFavorites.Assets {
                 }
             }
             
-            EditorGUILayout.ObjectField(item.obj, typeof(Object), false);
-            
+            EditorGUILayout.ObjectField(item.Obj, typeof(Object), false);
+
             OnItemInfoGUI(item);
 
             if (!isLock) {
@@ -357,20 +361,24 @@ namespace QuickFavorites.Assets {
             }
             
             GUILayout.EndHorizontal();
+
+            if (_isShowNotes) {
+                OnItemNoteGUI(item);
+            }
         }
 
         private void OnItemInfoGUI(FavoritesItemView item) {
             if (_isShowFileType) {
-                GUILayout.Label(" | " + item.type, GUILayout.Width(100));
+                GUILayout.Label(" | " + item.Type, GUILayout.Width(100));
             }
             if (_isShowFileSize) {
-                GUILayout.Label( " | " + FormatSize(item.size), GUILayout.Width(80));
+                GUILayout.Label( " | " + FormatSize(item.Size), GUILayout.Width(80));
             }
             if (_isShowLastAccessTime) {
-                GUILayout.Label(" | " + FormatDateTime(new DateTime(item.lastAccessTime)), GUILayout.Width(120));
+                GUILayout.Label(" | " + FormatDateTime(new DateTime(item.LastAccessTime)), GUILayout.Width(120));
             }
             if (_isShowLastModifiedTime) {
-                GUILayout.Label(" | " + FormatDateTime(new DateTime(item.lastModifiedTime)), GUILayout.Width(120));
+                GUILayout.Label(" | " + FormatDateTime(new DateTime(item.LastModifiedTime)), GUILayout.Width(120));
             }
         }
         
@@ -382,13 +390,36 @@ namespace QuickFavorites.Assets {
             OnItemDrop(itemRect, group, index);
         }
 
+        private void OnItemNoteGUI(FavoritesItemView item) {
+            GUILayout.BeginHorizontal();
+            if (CanDragItem) {
+                GUILayout.Label("", GUILayout.Width(10));// 空出来对齐拖拽按钮
+            }
+            EditorGUILayout.LabelField("Note:",GUILayout.Width(40));
+            bool isEditingThisItem = editingNoteItemView == item;
+            if (isEditingThisItem && !isLock) { // 编辑备注状态
+                editingNoteStr = EditorGUILayout.TextField(editingNoteStr);
+                if (GUILayout.Button("Confirm", GUILayout.Width(60))) {
+                    OnItemNoteBtnClick(item, true);
+                }
+            } else {
+                EditorGUILayout.LabelField(item.Note);
+                if (!isLock) {
+                    if (GUILayout.Button("Edit", GUILayout.Width(60))) {
+                        OnItemNoteBtnClick(item, false);
+                    }
+                }
+            }
+            GUILayout.EndHorizontal();
+        }
+
         private void OnItemDrag(FavoritesItemView item) {// 拖拽处理
             var dragRect = GUILayoutUtility.GetLastRect();
             if (Event.current.type != EventType.MouseDown || !dragRect.Contains(Event.current.mousePosition)) return;
             DragAndDrop.PrepareStartDrag();
-            DragAndDrop.objectReferences = new [] { item.obj };
+            DragAndDrop.objectReferences = new [] { item.Obj };
             DragAndDrop.SetGenericData("DraggingItem", item);
-            DragAndDrop.StartDrag(item.name);
+            DragAndDrop.StartDrag(item.Name);
             Event.current.Use();
         }
         
@@ -399,7 +430,7 @@ namespace QuickFavorites.Assets {
             if (!dropArea.Contains(currentEvent.mousePosition))
                 return;
 
-            string groupName = group == null ? "Default" : group.name;
+            string groupName = group == null ? "Default" : group.Name;
             int targetIndex = index;
             switch (currentEventType) {
                 case EventType.DragUpdated:
@@ -412,17 +443,17 @@ namespace QuickFavorites.Assets {
                     currentEvent.Use();
                     if (DragAndDrop.GetGenericData("DraggingItem") is FavoritesItemView dragData) {
                         if (index != -1 && group != null) {
-                            targetIndex = GetInsertionIndex(dropArea, group.items, dragData, index, IsOrderReverse);
+                            targetIndex = GetInsertionIndex(dropArea, group.Items, dragData, index, IsOrderReverse);
                         }
-                        if (groupName != dragData.groupName) {
+                        if (groupName != dragData.GroupName) {
                             Ctrl.ChangeItemGroup(dragData, groupName, targetIndex);
                         } else {
-                            Ctrl.ChangeItemOrderInGroup(group, dragData, targetIndex, false);
+                            Ctrl.ChangeItemOrderInGroup(group, dragData, targetIndex);
                         }
                         
                     } else {
                         if (index != -1 && group != null) {
-                            targetIndex = GetInsertionIndex(dropArea, group.items, null, index, IsOrderReverse);
+                            targetIndex = GetInsertionIndex(dropArea, group.Items, null, index, IsOrderReverse);
                         }
 
                         for (int i = DragAndDrop.objectReferences.Length -1; i >= 0; i--) {
@@ -451,8 +482,21 @@ namespace QuickFavorites.Assets {
         
         private void OnRemoveItemBtnClick(FavoritesItemView item) {
             if (EditorUtility.DisplayDialog("Confirm Delete Item", 
-                    $"Are you sure you want to remove the item '{item.name}'?", "Remove", "Cancel")) {
+                    $"Are you sure you want to remove the item '{item.Name}'?", "Remove", "Cancel")) {
                 Ctrl.RemoveItem(item);
+            }
+        }
+
+        private static FavoritesItemView editingNoteItemView;
+        private static string editingNoteStr;
+        private static void OnItemNoteBtnClick(FavoritesItemView item, bool isConfirm) {
+            if (!isConfirm) {
+                editingNoteItemView = item;
+                editingNoteStr = item.Note;
+            } else {
+                editingNoteItemView = null;
+                Ctrl.ChangeItemNote(item, editingNoteStr);
+                editingNoteStr = "";
             }
         }
         
@@ -472,14 +516,15 @@ namespace QuickFavorites.Assets {
         }
 
         private static bool IsItemCanShow(FavoritesItemView itemView, AssetFilterOptions filterOptions) {
-            if (!string.IsNullOrEmpty(searchString) && !itemView.name.Contains(searchString)) {
+            if (!string.IsNullOrEmpty(searchString) && 
+                (!itemView.Name.Contains(searchString) && !itemView.Note.Contains(searchString))) {
                 return false;
             }
             
             // 如果选择“All”，则显示所有资源
             if (filterOptions == AssetFilterOptions.Everything) return true;
             if (filterOptions == AssetFilterOptions.None) return false;
-            Type assetType = AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GUIDToAssetPath(itemView.guid));
+            Type assetType = AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GUIDToAssetPath(itemView.Guid));
             if (assetType == typeof(AnimationClip) && filterOptions.HasFlag(AssetFilterOptions.AnimationClip)) return true;
             if (assetType == typeof(AudioClip) && filterOptions.HasFlag(AssetFilterOptions.AudioClip)) return true;
             if (assetType == typeof(AudioMixer) && filterOptions.HasFlag(AssetFilterOptions.AudioMixer)) return true;
@@ -488,7 +533,7 @@ namespace QuickFavorites.Assets {
             if (assetType == typeof(GUISkin) && filterOptions.HasFlag(AssetFilterOptions.GUISkin)) return true;
             if (assetType == typeof(Material) && filterOptions.HasFlag(AssetFilterOptions.Material)) return true;
             if (assetType == typeof(Mesh) && filterOptions.HasFlag(AssetFilterOptions.Mesh)) return true;
-            if (itemView.type == ".fbx" && filterOptions.HasFlag(AssetFilterOptions.Model)) return true;
+            if (itemView.Type == ".fbx" && filterOptions.HasFlag(AssetFilterOptions.Model)) return true;
             if (assetType == typeof(PhysicMaterial) && filterOptions.HasFlag(AssetFilterOptions.PhysicMaterial)) return true;
             if (assetType == typeof(SceneAsset) && filterOptions.HasFlag(AssetFilterOptions.Scene)) return true;
             if (assetType == typeof(MonoScript) && filterOptions.HasFlag(AssetFilterOptions.Script)) return true;
@@ -496,7 +541,7 @@ namespace QuickFavorites.Assets {
             if (assetType == typeof(Sprite) && filterOptions.HasFlag(AssetFilterOptions.Sprite)) return true;
             if (assetType == typeof(Texture) && filterOptions.HasFlag(AssetFilterOptions.Texture)) return true;
             if (assetType == typeof(VideoClip) && filterOptions.HasFlag(AssetFilterOptions.VideoClip)) return true;
-            if (itemView.type == "directory" && filterOptions.HasFlag(AssetFilterOptions.Directory)) return true;
+            if (itemView.Type == "directory" && filterOptions.HasFlag(AssetFilterOptions.Directory)) return true;
             return false;
         }
 
