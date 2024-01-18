@@ -9,8 +9,19 @@ using UnityEngine.Video;
 using Object = UnityEngine.Object;
 
 namespace QuickFavorites.Assets {
-    public enum SortOption { CustomOrder, Name, Size, FileType, Note, LastAccessTime, LastModifiedTime}
-    
+    public enum SortOptions { CustomOrder, Name, Size, FileType, Note, LastAccessTime, LastModifiedTime}
+
+    [Flags]
+    public enum AssetInfoOptions {
+        None = 0,
+        Everything = ~0, // 所有选项
+        Note = 1 << 0, 
+        FileType = 1 << 1, 
+        Size = 1 << 2, 
+        LastAccessTime = 1 << 3, 
+        LastModifiedTime = 1 << 4
+    }
+
     [Flags] // 允许枚举值组合
     public enum AssetFilterOptions {
         None = 0,
@@ -57,23 +68,14 @@ namespace QuickFavorites.Assets {
         private static QuickAssetsFavoritesCtrl ctrl;
         
         public static AssetFilterOptions FilterOptions = AssetFilterOptions.Everything;
-        public static SortOption SelectedSortOption = SortOption.CustomOrder;
-        private static SortOption currentSortOption = SortOption.CustomOrder;
-        
+        public static SortOptions SelectedSortOptions = SortOptions.CustomOrder;
+        private static SortOptions currentSortOptions = SortOptions.CustomOrder;
+        private AssetInfoOptions _assetInfoOptions = AssetInfoOptions.None;
         public static bool IsOrderReverse; 
         private static bool isLock;
-        
-        private bool _isShowFileSize;
-        private bool _isShowFileType;
-        private bool _isShowLastAccessTime;
-        private bool _isShowLastModifiedTime;
-        private bool _isShowNotes;
-
-        private static readonly GUILayoutOption ToggleWidth = GUILayout.Width(120);
-        
         private static string searchString = "";
         
-        private static bool CanDragItem => !isLock && SelectedSortOption == SortOption.CustomOrder;
+        private static bool CanDragItem => !isLock && SelectedSortOptions == SortOptions.CustomOrder;
         public readonly Dictionary<string, bool> IsGroupFoldout = new Dictionary<string, bool>();
         private Vector2 _scrollPosition;
 
@@ -103,31 +105,30 @@ namespace QuickFavorites.Assets {
 
         private void OnGUI() {
             GUILayout.BeginHorizontal();
-            SelectedSortOption = (SortOption)EditorGUILayout.EnumPopup("Sort By", SelectedSortOption);
+            GUILayout.Label("Show Info", GUILayout.Width(70));
+            _assetInfoOptions = (AssetInfoOptions)EditorGUILayout.EnumPopup(_assetInfoOptions);
+            GUILayout.Label("Sort By", GUILayout.Width(50));
+            SelectedSortOptions = (SortOptions)EditorGUILayout.EnumPopup(SelectedSortOptions);
             IsOrderReverse = EditorGUILayout.ToggleLeft("IsReverse", IsOrderReverse, GUILayout.Width(80));
-            isLock = EditorGUILayout.ToggleLeft("IsLock", isLock, GUILayout.Width(80));
+            isLock = EditorGUILayout.ToggleLeft("IsLock", isLock, GUILayout.Width(60));
             GUILayout.EndHorizontal();
 
             UpdateSort();
             
             GUILayout.BeginHorizontal();
-            _isShowNotes = EditorGUILayout.ToggleLeft("Notes", _isShowNotes, ToggleWidth);
-            _isShowFileType = EditorGUILayout.ToggleLeft("Type", _isShowFileType, ToggleWidth);
-            _isShowFileSize = EditorGUILayout.ToggleLeft("Size", _isShowFileSize, ToggleWidth);
-            _isShowLastAccessTime = EditorGUILayout.ToggleLeft("LastAccessTime", _isShowLastAccessTime, ToggleWidth);
-            _isShowLastModifiedTime = EditorGUILayout.ToggleLeft("LastModifiedTime", _isShowLastModifiedTime, ToggleWidth);
-            GUILayout.EndHorizontal();
-            
-            GUILayout.BeginHorizontal();
-            searchString = EditorGUILayout.TextField("Search", searchString);
+            GUILayout.Label("Search", GUILayout.Width(70));
+            searchString = EditorGUILayout.TextField(searchString);
             if (GUILayout.Button("X", GUILayout.Width(20))) {
                 OnCancelSearchBtnClick();
             }
             GUILayout.EndHorizontal();
             
-            FilterOptions = (AssetFilterOptions)EditorGUILayout.EnumFlagsField("Filter Type", FilterOptions);
-            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Filter Type", GUILayout.Width(70));
+            FilterOptions = (AssetFilterOptions)EditorGUILayout.EnumFlagsField(FilterOptions);
+            GUILayout.EndHorizontal();
             
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
             Rect dropArea = GUILayoutUtility.GetRect(0.0f, 50.0f, GUILayout.ExpandWidth(true));
             GUI.Box(dropArea, "Drag Objects Here to Create New Group");
             OnItemDrop(dropArea, null);
@@ -149,24 +150,24 @@ namespace QuickFavorites.Assets {
         }
 
         private void OnTableHeadGUI() {
-            if (!_isShowFileSize && !_isShowFileType && !_isShowLastAccessTime && !_isShowLastModifiedTime) return;
+            if (_assetInfoOptions == AssetInfoOptions.None || _assetInfoOptions == AssetInfoOptions.Note) return;
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(10));
             GUILayout.BeginHorizontal();
 
             if (CanDragItem) {
-                GUILayout.Label("", GUILayout.Width(20));// 空出来对齐拖拽按钮
+                GUILayout.Label("", GUILayout.Width(10));// 空出来对齐拖拽按钮
             }
-            GUILayout.Label("Item", EditorStyles.boldLabel);
-            if (_isShowFileType) {
+            GUILayout.Label("| Item", EditorStyles.boldLabel);
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.FileType)) {
                 GUILayout.Label(" | Type", EditorStyles.boldLabel, GUILayout.Width(100));
             }
-            if (_isShowFileSize) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.Size)) {
                 GUILayout.Label(" | Size", EditorStyles.boldLabel, GUILayout.Width(80));
             }
-            if (_isShowLastAccessTime) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.LastAccessTime)) {
                 GUILayout.Label(" | Last Access", EditorStyles.boldLabel, GUILayout.Width(120));
             }
-            if (_isShowLastModifiedTime) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.LastModifiedTime)) {
                 GUILayout.Label(" | Last Modified", EditorStyles.boldLabel, GUILayout.Width(120));
             }
 
@@ -298,13 +299,13 @@ namespace QuickFavorites.Assets {
         }
 
         private void UpdateSort() {
-            if (currentSortOption == SelectedSortOption) {
+            if (currentSortOptions == SelectedSortOptions) {
                 return;
             }
             for (int i = 0; i < Ctrl.Groups.Count; i++) {
-                Ctrl.SortGroup(Ctrl.Groups[i], SelectedSortOption);
+                Ctrl.SortGroup(Ctrl.Groups[i], SelectedSortOptions);
             }
-            currentSortOption = SelectedSortOption;
+            currentSortOptions = SelectedSortOptions;
         }
         
         private string _groupBeingRenamed;
@@ -368,22 +369,23 @@ namespace QuickFavorites.Assets {
             
             GUILayout.EndHorizontal();
 
-            if (_isShowNotes) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.Note)) {
                 OnItemNoteGUI(item);
             }
+            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
         }
 
         private void OnItemInfoGUI(FavoritesItemView item) {
-            if (_isShowFileType) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.FileType)) {
                 GUILayout.Label(" | " + item.Type, GUILayout.Width(100));
             }
-            if (_isShowFileSize) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.Size)) {
                 GUILayout.Label( " | " + FormatSize(item.Size), GUILayout.Width(80));
             }
-            if (_isShowLastAccessTime) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.LastAccessTime)) {
                 GUILayout.Label(" | " + FormatDateTime(new DateTime(item.LastAccessTime)), GUILayout.Width(120));
             }
-            if (_isShowLastModifiedTime) {
+            if (_assetInfoOptions.HasFlag(AssetInfoOptions.LastModifiedTime)) {
                 GUILayout.Label(" | " + FormatDateTime(new DateTime(item.LastModifiedTime)), GUILayout.Width(120));
             }
         }
@@ -507,6 +509,9 @@ namespace QuickFavorites.Assets {
         }
         
         private static string FormatSize(long bytes) {
+            if (bytes == -1) {
+                return "?";
+            }
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
             double len = bytes;
             int order = 0;

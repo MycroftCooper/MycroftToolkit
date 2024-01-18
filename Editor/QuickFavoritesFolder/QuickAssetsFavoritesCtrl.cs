@@ -13,7 +13,7 @@ namespace QuickFavorites.Assets {
         public QuickAssetsFavoritesCtrl() {
             Model = new QuickAssetsFavoritesModel();
             Model.Load();
-            UpdateGroups(QuickAssetsFavoritesView.SelectedSortOption);
+            UpdateGroups(QuickAssetsFavoritesView.SelectedSortOptions);
         }
 
         #region Group操作
@@ -51,11 +51,11 @@ namespace QuickFavorites.Assets {
             return data;
         }
         
-        public void UpdateGroups(SortOption sortOption) {
+        public void UpdateGroups(SortOptions sortOptions) {
             Groups = new List<FavoritesGroupView>();
             foreach (var groupData in Model.Groups) {
                 var groupView = GroupDataToView(groupData);
-                SortGroup(groupView, sortOption);
+                SortGroup(groupView, sortOptions);
                 Groups.Add(groupView);
             }
         }
@@ -65,9 +65,9 @@ namespace QuickFavorites.Assets {
             return group;
         }
         
-        public void SortGroup(FavoritesGroupView group, SortOption sortOption) {
-            switch (sortOption) {
-                case SortOption.CustomOrder:
+        public void SortGroup(FavoritesGroupView group, SortOptions sortOptions) {
+            switch (sortOptions) {
+                case SortOptions.CustomOrder:
                     var itemViews = new List<FavoritesItemView>();
                     var oldItemViewsDict = group.Items.ToDictionary(item => item.Guid, item => item);
                     var groupData = Model.FindGroup(group.Name);
@@ -79,22 +79,22 @@ namespace QuickFavorites.Assets {
                     }
                     group.Items = itemViews;
                     break;
-                case SortOption.Name:
+                case SortOptions.Name:
                     group.Items = group.Items.OrderBy(item => item.Name).ToList();
                     break;
-                case SortOption.Size:
+                case SortOptions.Size:
                     group.Items = group.Items.OrderBy(item => item.Size).ToList();
                     break;
-                case SortOption.FileType:
+                case SortOptions.FileType:
                     group.Items = group.Items.OrderBy(item => item.Type).ToList();
                     break;
-                case SortOption.Note:
+                case SortOptions.Note:
                     group.Items = group.Items.OrderBy(item => item.Note).ToList();
                     break;
-                case SortOption.LastAccessTime:
+                case SortOptions.LastAccessTime:
                     group.Items = group.Items.OrderBy(item => item.LastAccessTime).ToList();
                     break;
-                case SortOption.LastModifiedTime:
+                case SortOptions.LastModifiedTime:
                     group.Items = group.Items.OrderBy(item => item.LastModifiedTime).ToList();
                     break;
             }
@@ -239,7 +239,7 @@ namespace QuickFavorites.Assets {
             itemView.GroupName = groupName;
             index = index == -1 ? targetGroupView.Items.Count : index;
             targetGroupView.Items.Insert(index, itemView);
-            SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOption);
+            SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOptions);
         }
 
         public void ChangeItemOrderInGroup(FavoritesGroupView group, FavoritesItemView item, int newOrder) {
@@ -300,7 +300,7 @@ namespace QuickFavorites.Assets {
             targetGroupView.Items.Insert(index, item);
             oldGroupView.Items.Remove(item);
             item.GroupName = targetGroupName;
-            SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOption);
+            SortGroup(targetGroupView, QuickAssetsFavoritesView.SelectedSortOptions);
         }
 
         public void ChangeItemNote(FavoritesItemView item, string newNoteStr) {
