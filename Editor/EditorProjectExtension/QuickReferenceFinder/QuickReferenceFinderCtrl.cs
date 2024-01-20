@@ -8,99 +8,44 @@ using YamlDotNet.RepresentationModel;
 using Object = UnityEngine.Object;
 
 namespace EditorProjectExtension.ReferenceFinder {
-    public class QuickReferenceFinder : EditorWindow {
-        #region UI相关
-        [MenuItem("Assets/Find References", false)]
-        private static void FindObjectReferences() {
-            var window = GetWindow<QuickReferenceFinder>(true, "Find References", true);
-            window.FindObjectReferences(Selection.activeObject);
-        }
+    public class QuickReferenceFinderCtrl {
+        public Object TargetObject;
+        public List<Object> References = new List<Object>();
+        public int ReferencesCount => References.Count;
 
-        private static readonly List<Object> References = new List<Object>();
-        private Object _findReferencesAfterLayout;
-        private Vector2 _scrollPosition = Vector2.zero;
-
-        private void OnGUI() {
-            GUILayout.Space(5);
-            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Found: " + References.Count);
-            if (GUILayout.Button("Clear", EditorStyles.miniButton)) {
-                References.Clear();
-            }
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(5);
-
-            for (var i = References.Count - 1; i >= 0; --i) {
-                LayoutItem(References[i]);
-            }
-
-            EditorGUILayout.EndScrollView();
-
-            if (_findReferencesAfterLayout == null) {
-                return;
-            }
-
-            FindObjectReferences(_findReferencesAfterLayout);
-
-            _findReferencesAfterLayout = null;
-        }
-
-        private void LayoutItem(Object obj) {
-            var style = EditorStyles.miniButtonLeft;
-            style.alignment = TextAnchor.MiddleLeft;
-
-            if (obj == null) {
-                return;
-            }
-
-            GUILayout.BeginHorizontal();
-
-            if (GUILayout.Button(obj.name, style)) {
-                Selection.activeObject = obj;
-                EditorGUIUtility.PingObject(obj);
-            }
-
-            // Use "right arrow" unicode character 
-            if (GUILayout.Button("\u25B6", EditorStyles.miniButtonRight, GUILayout.MaxWidth(20))) {
-                _findReferencesAfterLayout = obj;
-            }
-
-            GUILayout.EndHorizontal();
-        }
-        #endregion
-
-        private void FindObjectReferences(Object toFind) {
+        public void FindObjectReferences(Object targetObj) {
             References.Clear();
-            EditorUtility.DisplayProgressBar("Searching", "Generating file paths", 0.0f);
-            FindObjectReferencesInFiles(toFind);
-            EditorUtility.ClearProgressBar();
+            TargetObject = targetObj;
+
+            try {
+                EditorUtility.DisplayProgressBar("Searching", "Generating file paths", 0.0f);
+
+                var targetPath = AssetDatabase.GetAssetPath(targetObj);
+                var guid = AssetDatabase.AssetPathToGUID(targetPath);
+                var internalID = "";
+                if (targetObj is Sprite) {
+                    internalID = GetSpriteInternalID(targetObj);
+                }
+
+                var rootPath = Path.GetDirectoryName(Application.dataPath);
+                List<string> result;
+
+                if (string.IsNullOrEmpty(internalID)) {
+                    result = RipsGrepHelper.Search(guid, rootPath);
+                } else {
+                    var internalIDText = $"fileID: {internalID}, guid: {guid}";
+                    result = RipsGrepHelper.Search(internalIDText, rootPath);
+                }
+
+                LoadFoundObjects(result);
+            } catch (Exception ex) {
+                Debug.LogError($"Error while searching for references: {ex.Message}");
+            } finally {
+                EditorUtility.ClearProgressBar();
+            }
         }
 
-        public static void FindObjectReferencesInFiles(Object toFind) {
-            var targetPath = AssetDatabase.GetAssetPath(toFind);
-            var guid = AssetDatabase.AssetPathToGUID(targetPath);
-            var internalID = "";
-            if (toFind is Sprite) {
-                internalID = GetSpriteInternalID(toFind);
-            }
-            
-            var rootPath = Path.GetDirectoryName(Application.dataPath);
-            List<string> result;
-
-            if (string.IsNullOrEmpty(internalID)) {
-                result = RipsGrepHelper.Search(guid, rootPath);
-            } else {
-                var internalIDText = $"fileID: {internalID}, guid: {guid}";
-                result = RipsGrepHelper.Search(internalIDText, rootPath);
-            }
-            LoadFoundObjects(result);
-        }
-
-        private static void LoadFoundObjects(List<string> pathList) {
+        private void LoadFoundObjects(List<string> pathList) {
             for (int i = 0; i < pathList.Count; i++) {
                 var text = $"Searching dependencies ({i + 1}/{pathList.Count})";
                 EditorUtility.DisplayProgressBar("Searching", text, (i + 1f) / pathList.Count);
@@ -115,7 +60,8 @@ namespace EditorProjectExtension.ReferenceFinder {
             }
         }
 
-        private static string GetSpriteInternalID(Object toFind) {
+        #region Sprite处理相关
+        private string GetSpriteInternalID(Object toFind) {
             var targetPath = AssetDatabase.GetAssetPath(toFind);
             var targetMetaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(targetPath);
 
@@ -145,7 +91,7 @@ namespace EditorProjectExtension.ReferenceFinder {
             return internalID;
         }
 
-        private static string GetSpriteInternalIDInSpriteAtlas(Object toFind) {
+        private string GetSpriteInternalIDInSpriteAtlas(Object toFind) {
             var targetPath = AssetDatabase.GetAssetPath(toFind);
             var guid = AssetDatabase.AssetPathToGUID(targetPath);
             var internalID = "";
@@ -187,5 +133,6 @@ namespace EditorProjectExtension.ReferenceFinder {
 
             return internalID;
         }
+        #endregion
     }
 }
