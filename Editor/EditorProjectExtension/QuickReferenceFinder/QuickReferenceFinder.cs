@@ -16,7 +16,7 @@ namespace EditorProjectExtension.ReferenceFinder {
             window.FindObjectReferences(Selection.activeObject);
         }
 
-        private readonly List<Object> _references = new List<Object>();
+        private static readonly List<Object> References = new List<Object>();
         private Object _findReferencesAfterLayout;
         private Vector2 _scrollPosition = Vector2.zero;
 
@@ -25,17 +25,17 @@ namespace EditorProjectExtension.ReferenceFinder {
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Found: " + _references.Count);
+            GUILayout.Label("Found: " + References.Count);
             if (GUILayout.Button("Clear", EditorStyles.miniButton)) {
-                _references.Clear();
+                References.Clear();
             }
 
             GUILayout.EndHorizontal();
 
             GUILayout.Space(5);
 
-            for (var i = _references.Count - 1; i >= 0; --i) {
-                LayoutItem(_references[i]);
+            for (var i = References.Count - 1; i >= 0; --i) {
+                LayoutItem(References[i]);
             }
 
             EditorGUILayout.EndScrollView();
@@ -73,56 +73,45 @@ namespace EditorProjectExtension.ReferenceFinder {
         }
         #endregion
 
-        public static readonly List<string> TargetExtensionName = new List<string> {
-            ".prefab",
-            ".asset",
-            ".unity",
-            ".anim",
-            ".controller",
-            ".overrideController",
-            ".spriteatlas",
-            ".mat"
-        };
-
         private void FindObjectReferences(Object toFind) {
-            _references.Clear();
+            References.Clear();
             EditorUtility.DisplayProgressBar("Searching", "Generating file paths", 0.0f);
-            FindObjectReferencesInFiles(
-                toFind,
-                TargetExtensionName,
-                (index, count) => {
-                    var text = $"Searching dependencies ({index}/{count})";
-                    EditorUtility.DisplayProgressBar("Searching", text, index / count);
-                },
-                o => { _references.Add(o); });
-
+            FindObjectReferencesInFiles(toFind);
             EditorUtility.ClearProgressBar();
         }
 
-        public static void FindObjectReferencesInFiles(Object toFind, List<string> files,
-            Action<float, float> onProgress, Action<Object> onFound) {
+        public static void FindObjectReferencesInFiles(Object toFind) {
             var targetPath = AssetDatabase.GetAssetPath(toFind);
             var guid = AssetDatabase.AssetPathToGUID(targetPath);
             var internalID = "";
             if (toFind is Sprite) {
                 internalID = GetSpriteInternalID(toFind);
             }
-
-            var findPath = Application.dataPath + "/";
+            
             var rootPath = Path.GetDirectoryName(Application.dataPath);
+            List<string> result;
 
             if (string.IsNullOrEmpty(internalID)) {
-                var list = RipsGrepHelper.Search(guid, findPath, TargetExtensionName, rootPath);
-                foreach (string path in list) {
-                    onFound?.Invoke(AssetDatabase.LoadAssetAtPath<Object>(path));
-                }
-            }
-            else {
+                result = RipsGrepHelper.Search(guid, rootPath);
+            } else {
                 var internalIDText = $"fileID: {internalID}, guid: {guid}";
-                var list = RipsGrepHelper.Search(internalIDText, findPath, TargetExtensionName, rootPath);
-                foreach (string path in list) {
-                    onFound?.Invoke(AssetDatabase.LoadAssetAtPath<Object>(path));
+                result = RipsGrepHelper.Search(internalIDText, rootPath);
+            }
+            LoadFoundObjects(result);
+        }
+
+        private static void LoadFoundObjects(List<string> pathList) {
+            for (int i = 0; i < pathList.Count; i++) {
+                var text = $"Searching dependencies ({i + 1}/{pathList.Count})";
+                EditorUtility.DisplayProgressBar("Searching", text, (i + 1f) / pathList.Count);
+                
+                string path = pathList[i];
+                Object obj = AssetDatabase.LoadAssetAtPath<Object>(path);
+                if (obj == null) {
+                    Debug.LogError($"QuickReferenceFinder>Path[{path}] object load fail!");
+                    continue;
                 }
+                References.Add(obj);
             }
         }
 
@@ -185,14 +174,12 @@ namespace EditorProjectExtension.ReferenceFinder {
                         spriteIndex = i;
                         break;
                     }
-
                     ++i;
                 }
 
                 if (spriteIndex < 0) {
                     continue;
                 }
-
                 var packedSprites = (YamlSequenceNode)spriteAtlasNode["m_PackedSprites"];
                 internalID = packedSprites[spriteIndex]["fileID"].ToString();
                 break;

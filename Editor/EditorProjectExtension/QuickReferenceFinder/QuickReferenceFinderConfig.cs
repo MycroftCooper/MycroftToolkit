@@ -5,6 +5,7 @@ namespace EditorProjectExtension.ReferenceFinder {
     [CreateAssetMenu(fileName = "QuickReferenceFinderConfig", menuName = "EditorProjectExtension/ReferenceFinderConfig")]
     public class QuickReferenceFinderConfig : ScriptableObject {
         public Object ripGrepDirectory;
+        public int rgSearchTimeOutLimit = 10000;
 
         public string GetRipGrepPath() {
             if (ripGrepDirectory == null) {
