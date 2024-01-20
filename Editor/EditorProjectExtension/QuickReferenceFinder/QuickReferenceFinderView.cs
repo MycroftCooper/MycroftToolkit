@@ -4,7 +4,7 @@ using Object = UnityEngine.Object;
 
 namespace EditorProjectExtension.ReferenceFinder {
     public class QuickReferenceFinderView : EditorWindow {
-        [MenuItem("Assets/Find References", false)]
+        [MenuItem("Assets/Find References", false, 20)]
         private static void FindObjectReferences() {
             StartNewReferencesWindow(Selection.activeObject);
         }
