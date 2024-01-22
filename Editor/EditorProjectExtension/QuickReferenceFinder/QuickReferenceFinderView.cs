@@ -14,13 +14,13 @@ namespace EditorProjectExtension.ReferenceFinder {
                 return;
             }
             var window = CreateInstance<QuickReferenceFinderView>();  // 创建新窗口实例
-            window.titleContent = new GUIContent($"Find {targetObj.name} References");  // 设置窗口标题
+            window.titleContent = new GUIContent($"{targetObj.name} References");  // 设置窗口标题
+            
             window.Show();  // 显示新窗口
             window.FindObjectReferences(targetObj);
         }
         
         private QuickReferenceFinderCtrl _ctrl;
-        private Object _findReferencesAfterLayout;
         private Vector2 _scrollPosition = Vector2.zero;
 
         private void OnGUI() {
@@ -46,12 +46,6 @@ namespace EditorProjectExtension.ReferenceFinder {
             }
 
             EditorGUILayout.EndScrollView();
-
-            if (_findReferencesAfterLayout == null) {
-                return;
-            }
-            StartNewReferencesWindow(_findReferencesAfterLayout);
-            _findReferencesAfterLayout = null;
         }
 
         private void OnItemGUI(Object obj) {
@@ -69,7 +63,7 @@ namespace EditorProjectExtension.ReferenceFinder {
                 EditorGUIUtility.PingObject(obj);
             }
             if (GUILayout.Button("\u25B6", EditorStyles.miniButtonRight, GUILayout.MaxWidth(20))) {
-                _findReferencesAfterLayout = obj;// Use "right arrow" unicode character 
+                StartNewReferencesWindow(obj);
             }
 
             GUILayout.EndHorizontal();
