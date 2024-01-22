@@ -15,7 +15,6 @@ namespace EditorProjectExtension.ReferenceFinder {
             }
             var window = CreateInstance<QuickReferenceFinderView>();  // 创建新窗口实例
             window.titleContent = new GUIContent($"{targetObj.name} References");  // 设置窗口标题
-            
             window.Show();  // 显示新窗口
             window.FindObjectReferences(targetObj);
         }
