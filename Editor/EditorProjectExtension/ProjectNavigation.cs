@@ -76,7 +76,7 @@ namespace EditorProjectExtension.Navigation {
         private static readonly MethodInfo ShowFolderContents;
         
         static ProjectNavigationExtension() {
-            ProjectWindowType = typeof(Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
+            ProjectWindowType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.ProjectBrowser");
             GetActiveFolderPathMethod = ProjectWindowType.GetMethod("GetActiveFolderPath", BindingFlags.NonPublic | BindingFlags.Instance);
             ShowFolderContents = ProjectWindowType.GetMethod("ShowFolderContents", BindingFlags.NonPublic | BindingFlags.Instance);
             IsEnable = EditorPrefs.GetBool("ProjectNavigationExtensionEnable");

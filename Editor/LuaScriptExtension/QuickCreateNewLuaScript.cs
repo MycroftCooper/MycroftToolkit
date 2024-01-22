@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
-namespace EditorProjectExtension {
+namespace LuaScriptExtension {
     public class QuickCreateNewLuaScript : MonoBehaviour {
         private const string Content = ""; 
         
