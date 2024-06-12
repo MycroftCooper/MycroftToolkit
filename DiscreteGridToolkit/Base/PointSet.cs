@@ -9,14 +9,11 @@ namespace MycroftToolkit.DiscreteGridToolkit {
     
     public class PointComparer : IComparer<Vector2Int> {
         public int Compare(Vector2Int x, Vector2Int y) {
-            if (x == y) return 0;
-            if (x.y > y.y) return 1;
-            else if (x.x < y.x) return -1;
-            else {
-                if (x.x > y.x) return 1;
-                if (x.x < y.x) return -1;
-                return 0;
+            int result = x.y.CompareTo(y.y);
+            if (result == 0) {
+                result = x.x.CompareTo(y.x);
             }
+            return result;
         }
     }
     
@@ -45,7 +42,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         }
         public PointSet(Vector2Int centerPos, List<Vector2Int> template) {
             Type = EPointSetType.Any;
-            Points = new SortedSet<Vector2Int>();
+            Points = new SortedSet<Vector2Int>(Comparer);
             foreach (Vector2Int pos in template) {
                 Vector2Int p = centerPos + pos;
                 Points.Add(p);
@@ -53,9 +50,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         }
 
         protected virtual void UpdatePointSet() { }
-
-        public bool HasPoint(Vector2Int point)
-            => Points.Contains(point);
+        
         public void ForEach(Action<Vector2Int> action) {
             foreach (var point in Points) {
                 action?.Invoke(point);
@@ -63,7 +58,7 @@ namespace MycroftToolkit.DiscreteGridToolkit {
         }
         public PointSet Copy() => new PointSet(Points, Type);
         public bool AddPoint(Vector2Int point)
-            => !Points.Add(point);
+            => Points.Add(point);
         public bool AddPoints(List<Vector2Int> points) {
             bool hasPoint = false;
             points.ForEach(p => {
