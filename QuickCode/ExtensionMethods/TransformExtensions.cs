@@ -33,6 +33,16 @@ namespace MycroftToolkit.QuickCode {
             tr.localScale = Vector3.one;
         }
         
+        public static void SetGobleScale(this Transform tr, Vector3 targetScale) {
+            Vector3 currentWorldScale = tr.lossyScale;
+            Vector3 newLocalScale = new Vector3(
+                targetScale.x / currentWorldScale.x * tr.localScale.x,
+                targetScale.y / currentWorldScale.y * tr.localScale.y,
+                targetScale.z / currentWorldScale.z * tr.localScale.z
+            );
+            tr.localScale = newLocalScale;
+        }
+        
         public static Transform FindParent(this Transform tr, string name) {
             Transform parent = tr.parent;
             while (parent != null && parent.name != name)
