@@ -79,6 +79,15 @@ namespace MapSystem.PathFinding {
             new Vector2Int(-1, -1), // 左下
             new Vector2Int(1, -1)   // 右下
         };
+        
+        public static int GetDirectionIndex(Vector2Int direction) {
+            for (int i = 0; i < Directions.Length; i++) {
+                if (Directions[i] == direction) {
+                    return i;
+                }
+            }
+            return -1; // 如果方向无效，返回 -1
+        }
     }
     
     public class PointLibrary : ICollection<GridPoint>,

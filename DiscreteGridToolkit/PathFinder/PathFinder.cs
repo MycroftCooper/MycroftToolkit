@@ -72,8 +72,7 @@ namespace MapSystem.PathFinding {
         }
         
         #endregion
-
-        [Button]
+        
         public void FindPath(PathFindingRequest request) {
             if (request == null) {
                 Debug.LogError("PathFinder: request is null");
@@ -90,17 +89,8 @@ namespace MapSystem.PathFinding {
             }
 
             if (!request.CanUseCache) {
-                if (isDebug) {
-                    _stopwatch = new Stopwatch();
-                    _stopwatch.Start();
-                }
                 var resultPath = FindPath(request.StartPos, request.EndPos);
                 request.SetResultPath(resultPath);
-                if (isDebug) {
-                    _stopwatch.Stop();
-                    Debug.Log($"Pathfinding completed in {_stopwatch.ElapsedMilliseconds} ms.");
-                    _debugRequest = request;
-                }
             }
         }
 
@@ -112,38 +102,6 @@ namespace MapSystem.PathFinding {
             int dx = Mathf.Abs(a.X - b.X);
             int dy = Mathf.Abs(a.Y - b.Y);
             return (int)Mathf.Sqrt(dx * dx + dy * dy);
-        }
-        
-        private readonly List<GridPoint> _neighbours = new List<GridPoint>(8); // 复用邻居列表
-        private List<GridPoint> GetNeighbours(GridPoint currentGridPoint) {
-            _neighbours.Clear();
-            // 检查当前节点的四周八方向
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    if (dx == 0 && dy == 0) continue;
-
-                    int newX = currentGridPoint.X + dx;
-                    int newY = currentGridPoint.Y + dy;
-
-                    if (!IsPassable(newX, newY)) {
-                        continue;
-                    }
-                    
-                    // 如果是对角线方向，则需要检查水平和垂直方向的合法性
-                    if (dx != 0 && dy != 0) {
-                        if (!IsPassable(currentGridPoint.X + dx, currentGridPoint.Y, false) ||
-                            !IsPassable(currentGridPoint.X, currentGridPoint.Y + dy, false)) {
-                            // 如果水平或垂直方向阻挡，则不允许沿对角线前进
-                            continue;
-                        }
-                    }
-
-                    GridPoint neighbour = _pointsMap[newX, newY];
-                    _neighbours.Add(neighbour);
-                }
-            }
-
-            return _neighbours;
         }
 
         #region Theta算法相关
@@ -188,22 +146,30 @@ namespace MapSystem.PathFinding {
         #endregion
 
         #region 跳点相关
-        private void PreprocessJumpPoints() {
-            for (int y = 0; y < _mapHeight; y++) {
-                for (int x = 0; x < _mapWidth; x++) {
-                    GridPoint point = _pointsMap[x, y];
-                    if (!point.IsPassable)
-                        continue;
 
-                    for (int dirIndex = 0; dirIndex < GridPoint.Directions.Length; dirIndex++) {
-                        Vector2Int direction = GridPoint.Directions[dirIndex];
-                        Vector2Int jumpPoint = FindJumpPoint(point, direction);
-                        point.JumpPoints[dirIndex] = jumpPoint;
+        private void PreprocessJumpPoints() {
+            for (int x = 0; x < _mapWidth; x++) {
+                for (int y = 0; y < _mapHeight; y++) {
+                    if (!_pointsMap[x, y].IsPassable) {
+                        continue;
+                    }
+
+                    for (int dir = 0; dir < GridPoint.Directions.Length; dir++) {
+                        Vector2Int direction = GridPoint.Directions[dir];
+                        Vector2Int currentJumpPoint = _pointsMap[x, y].JumpPoints[dir];
+
+                        // 如果当前跳点未计算过，或者发现了一个新的跳点
+                        if (currentJumpPoint == new Vector2Int(-1, -1)) {
+                            Vector2Int jumpPoint = FindJumpPoint(_pointsMap[x, y], direction);
+                            if (jumpPoint != new Vector2Int(-1, -1)) {
+                                _pointsMap[x, y].JumpPoints[dir] = jumpPoint;
+                            }
+                        }
                     }
                 }
             }
         }
-        
+
         private Vector2Int FindJumpPoint(GridPoint startPoint, Vector2Int direction) {
             int x = startPoint.X;
             int y = startPoint.Y;
@@ -217,95 +183,102 @@ namespace MapSystem.PathFinding {
                 if (!IsPassable(x, y))
                     return new Vector2Int(-1, -1); // 无效跳点
 
-                if (HasForcedNeighbor(startPoint, direction))
+                if (HasForcedNeighbor(_pointsMap[x, y], direction))
                     return new Vector2Int(x, y); // 找到跳点
 
-                // 对于对角线方向，需要检查水平和垂直方向的跳点
                 if (dx != 0 && dy != 0) {
-                    if (IsPassable(x - dx, y + dy) && !IsPassable(x - dx, y))
-                        return new Vector2Int(x, y);
-                    if (IsPassable(x + dx, y - dy) && !IsPassable(x, y - dy))
-                        return new Vector2Int(x, y);
+                    Vector2Int jumpPoint;
+                    if (IsPassable(x + dx, y)) {
+                        jumpPoint = FindJumpPoint(_pointsMap[x + dx, y], direction);
+                        if (jumpPoint != new Vector2Int(-1, -1)) {
+                            return jumpPoint;
+                        }
+                    }
+
+                    if (IsPassable(x, y + dy)) {
+                        jumpPoint = FindJumpPoint(_pointsMap[x, y + dy], direction);
+                        if (jumpPoint != new Vector2Int(-1, -1)) {
+                            return jumpPoint;
+                        }
+                    }
                 }
             }
         }
-        
+
         public bool HasForcedNeighbor(GridPoint point, Vector2Int direction) {
             int x = point.X;
             int y = point.Y;
+            int dx = direction.x;
+            int dy = direction.y;
 
-            if (direction.x != 0 && direction.y != 0) { // 对角线方向
-                if ((IsPassable(x - direction.x, y + direction.y) && !IsPassable(x - direction.x, y)) ||
-                    (IsPassable(x + direction.x, y - direction.y) && !IsPassable(x, y - direction.y)))
+            // 对角线方向
+            if (dx != 0 && dy != 0) {
+                // 检查是否存在强迫邻居
+                if ((IsPassable(x - dx, y + dy) && !IsPassable(x - dx, y)) ||
+                    (IsPassable(x + dx, y - dy) && !IsPassable(x, y - dy)))
                     return true;
-            } else {
-                if (direction.x != 0) { // 垂直方向
-                    if ((IsPassable(x + direction.x, y + 1) && !IsPassable(x, y + 1)) ||
-                        (IsPassable(x + direction.x, y - 1) && !IsPassable(x, y - 1)))
-                        return true;
-                } else { // 水平方向
-                    if ((IsPassable(x + 1, y + direction.y) && !IsPassable(x + 1, y)) ||
-                        (IsPassable(x - 1, y + direction.y) && !IsPassable(x - 1, y)))
-                        return true;
-                }
+            }else if (dx != 0) { // 水平方向
+                if ((IsPassable(x + dx, y + 1) && !IsPassable(x, y + 1)) ||
+                    (IsPassable(x + dx, y - 1) && !IsPassable(x, y - 1)))
+                    return true;
+            }else if (dy != 0) { // 垂直方向
+                if ((IsPassable(x + 1, y + dy) && !IsPassable(x + 1, y)) ||
+                    (IsPassable(x - 1, y + dy) && !IsPassable(x - 1, y)))
+                    return true;
             }
             return false;
         }
-        
+
         public void UpdateJumpPoints(Vector2Int point) {
-            // int x = point.x;
-            // int y = point.y;
-            //
-            // // 更新自身的跳点数据
-            // for (int d = 0; d < Directions.Length; d++) {
-            //     _jumpPoints[x, y][d] = CalculateJumpPoint(x, y, Directions[d].x, Directions[d].y);
-            // }
-            //
-            // // 更新相邻点的跳点数据
-            // for (int i = -1; i <= 1; i++) {
-            //     for (int j = -1; j <= 1; j++) {
-            //         if (i == 0 && j == 0) continue; // 跳过自身
-            //
-            //         int nx = x + i;
-            //         int ny = y + j;
-            //
-            //         // 确保相邻点在地图范围内
-            //         if (nx >= 0 && nx < _mapWidth && ny >= 0 && ny < _mapHeight) {
-            //             // 重新计算指向 P 点方向的跳点
-            //             for (int d = 0; d < Directions.Length; d++) {
-            //                 _jumpPoints[nx, ny][d] = CalculateJumpPoint(nx, ny, Directions[d].x, Directions[d].y);
-            //             }
-            //         }
-            //     }
-            // }
+
         }
 
         private GridPoint Jump(GridPoint current, Vector2Int direction, GridPoint end) {
-            int x = current.X + direction.x;
-            int y = current.Y + direction.y;
-
-            if (!IsPassable(x, y)) return null;
-
-            GridPoint nextPoint = _pointsMap[x, y];
-
-            if (nextPoint.Equals(end)) return nextPoint;
-
-            // 检查是否存在强迫邻居
-            if (HasForcedNeighbor(nextPoint, direction)) return nextPoint;
-
-            // 对于对角线方向，需要检查水平和垂直方向
-            if (direction.x != 0 && direction.y != 0) {
-                GridPoint horizontalJump = Jump(nextPoint, new Vector2Int(direction.x, 0), end);
-                GridPoint verticalJump = Jump(nextPoint, new Vector2Int(0, direction.y), end);
-                if (horizontalJump != null || verticalJump != null) return nextPoint;
+            // 获取当前点在该方向上的预处理跳点
+            Vector2Int jumpPoint = current.JumpPoints[GridPoint.GetDirectionIndex(direction)];
+            if (jumpPoint != new Vector2Int(-1, -1)) return _pointsMap[jumpPoint.x, jumpPoint.y];
+            
+            int x = current.X;
+            int y = current.Y;
+            int dx = direction.x;
+            int dy = direction.y;
+            
+            while (true) {
+                x += dx;
+                y += dy;
+                
+                if (!IsPassable(x, y)) return null;
+                GridPoint nextPoint = _pointsMap[x, y];
+                
+                // 如果找到终点，直接返回该点
+                if (nextPoint == end) return nextPoint;
+                
+                jumpPoint = nextPoint.JumpPoints[GridPoint.GetDirectionIndex(direction)];
+                if (jumpPoint != new Vector2Int(-1, -1)) return _pointsMap[jumpPoint.x, jumpPoint.y];
+                
+                if (HasForcedNeighbor(_pointsMap[x, y], direction)) return nextPoint; // 找到跳点
+                
+                if (dx != 0 && dy != 0) {
+                    GridPoint jp;
+                    if (IsPassable(x + dx, y)) {
+                        jp = Jump(_pointsMap[x + dx, y], direction, end);
+                        if (jp != null) {
+                            return jp;
+                        }
+                    }
+                    if (IsPassable(x, y + dy)) {
+                        jp = Jump(_pointsMap[x, y + dy], direction, end);
+                        if (jp != null) {
+                            return jp;
+                        }
+                    }
+                }
             }
-
-            // 递归调用
-            return Jump(nextPoint, direction, end);
         }
 
+        private readonly List<GridPoint> _successors = new List<GridPoint>();
         public List<GridPoint> GetSuccessors(GridPoint point, GridPoint end) {
-            List<GridPoint> successors = new List<GridPoint>();
+            _successors.Clear();
             List<Vector2Int> directions;
 
             if (point.P != null) {
@@ -322,59 +295,77 @@ namespace MapSystem.PathFinding {
             foreach (var dir in directions) {
                 GridPoint jumpPoint = Jump(point, dir, end);
                 if (jumpPoint != null) {
-                    successors.Add(jumpPoint);
+                    _successors.Add(jumpPoint);
                 }
             }
 
-            return successors;
+            return _successors;
         }
 
+        private readonly List<Vector2Int> _pruned = new List<Vector2Int>();
         public List<Vector2Int> PruneDirections(GridPoint point, Vector2Int parentDir) {
-            List<Vector2Int> pruned = new List<Vector2Int>();
+            _pruned.Clear();
+            int x = point.X;
+            int y = point.Y;
             int dx = parentDir.x;
             int dy = parentDir.y;
 
-            // 对角线方向
-            if (dx != 0 && dy != 0) {
-                // 保留前进方向
-                if (IsPassable(point.X + dx, point.Y + dy)) pruned.Add(new Vector2Int(dx, dy));
+            // 普通方向处理
+            if (dx != 0 && dy != 0){// 对角线方向
+                // 检查是否可以沿对角线方向移动
+                bool canDiagonal = IsPassable(x + dx, y + dy) && IsPassable(x + dx, y) && IsPassable(x, y + dy);
+                if (canDiagonal) {// 对角线方向
+                    _pruned.Add(new Vector2Int(dx, dy));
+                }
+                if (IsPassable(x + dx, y)) {// 水平方向
+                    _pruned.Add(new Vector2Int(dx, 0));
+                }
+                if (IsPassable(x, y + dy)) {// 垂直方向
+                    _pruned.Add(new Vector2Int(0, dy));
+                }
+            }else if (dx != 0 && IsPassable(x + dx, y)) {// 水平方向
+                _pruned.Add(new Vector2Int(dx, 0));
+            }else if (dy != 0 && IsPassable(x, y + dy)){ // 垂直方向
+                _pruned.Add(new Vector2Int(0, dy));
+            }
+            
+            // 强迫邻居处理
+            if (dx != 0 && dy != 0) { // 对角线方向
+                // 左侧强迫邻居
+                if (!IsPassable(x - dx, y) && IsPassable(x - dx, y + dy)) {
+                    _pruned.Add(new Vector2Int(-dx, dy));
+                }
 
-                // 水平和垂直方向
-                if (IsPassable(point.X + dx, point.Y)) pruned.Add(new Vector2Int(dx, 0));
+                // 右侧强迫邻居
+                if (!IsPassable(x, y - dy) && IsPassable(x + dx, y - dy)) {
+                    _pruned.Add(new Vector2Int(dx, -dy));
+                }
+            }else if (dx != 0) { // 水平方向
+                // 上方强迫邻居
+                if (!IsPassable(x, y + 1) && IsPassable(x + dx, y + 1)) {
+                    _pruned.Add(new Vector2Int(dx, 1));
+                }
 
-                if (IsPassable(point.X, point.Y + dy)) pruned.Add(new Vector2Int(0, dy));
+                // 下方强迫邻居
+                if (!IsPassable(x, y - 1) && IsPassable(x + dx, y - 1)) {
+                    _pruned.Add(new Vector2Int(dx, -1));
+                }
+            }
+            else if (dy != 0) { // 垂直方向
+                // 右侧强迫邻居
+                if (!IsPassable(x + 1, y) && IsPassable(x + 1, y + dy)) {
+                    _pruned.Add(new Vector2Int(1, dy));
+                }
 
-                // 处理强迫邻居
-                if (!IsPassable(point.X - dx, point.Y) && IsPassable(point.X - dx, point.Y + dy))
-                    pruned.Add(new Vector2Int(-dx, dy));
-
-                if (!IsPassable(point.X, point.Y - dy) && IsPassable(point.X + dx, point.Y - dy))
-                    pruned.Add(new Vector2Int(dx, -dy));
-            } else {
-                // 水平或垂直方向
-                if (dx != 0) {
-                    if (IsPassable(point.X + dx, point.Y)) pruned.Add(new Vector2Int(dx, 0));
-
-                    // 处理强迫邻居
-                    if (!IsPassable(point.X, point.Y + 1) && IsPassable(point.X + dx, point.Y + 1))
-                        pruned.Add(new Vector2Int(dx, 1));
-
-                    if (!IsPassable(point.X, point.Y - 1) && IsPassable(point.X + dx, point.Y - 1))
-                        pruned.Add(new Vector2Int(dx, -1));
-                } else if (dy != 0) {
-                    if (IsPassable(point.X, point.Y + dy)) pruned.Add(new Vector2Int(0, dy));
-
-                    // 处理强迫邻居
-                    if (!IsPassable(point.X + 1, point.Y) && IsPassable(point.X + 1, point.Y + dy))
-                        pruned.Add(new Vector2Int(1, dy));
-
-                    if (!IsPassable(point.X - 1, point.Y) && IsPassable(point.X - 1, point.Y + dy))
-                        pruned.Add(new Vector2Int(-1, dy));
+                // 左侧强迫邻居
+                if (!IsPassable(x - 1, y) && IsPassable(x - 1, y + dy)) {
+                    _pruned.Add(new Vector2Int(-1, dy));
                 }
             }
 
-            return pruned;
+            return _pruned;
         }
+
         #endregion
 
         private int _maxSteps = 100;
@@ -552,6 +543,22 @@ namespace MapSystem.PathFinding {
         public bool useOldPathFinder;
         private PathFindingRequest _debugRequest;
         private Stopwatch _stopwatch;
+
+        [Button]
+        private void DebugFindPath(Vector2Int start, Vector2Int end) {
+            _stopwatch = new Stopwatch();
+            _stopwatch.Start();
+            PathFindingRequest request = new PathFindingRequest(start, end, false, true);
+            if (useOldPathFinder) {
+                
+            } else {
+                FindPath(request);
+            }
+            _debugRequest = request;
+            _stopwatch.Stop();
+            Debug.Log($"Pathfinding completed in {_stopwatch.ElapsedMilliseconds} ms.");
+        }
+        
         void OnDrawGizmos() {
             if (!isDebug || _pointsMap == null) {
                 return;
