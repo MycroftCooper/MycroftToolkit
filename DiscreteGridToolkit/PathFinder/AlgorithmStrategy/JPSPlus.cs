@@ -7,20 +7,20 @@ namespace PathFinding {
     public class JPSPlus : IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.JPSPlus;
         private SourceMap _map;
-        private GridPoint[,] _pointsMap;
+        private JPSPlusPoint[,] _pointsMap;
         
         public void InitMap(SourceMap map) {
             _map = map;
-            _pointsMap = new GridPoint[_map.Width, _map.Height];
+            _pointsMap = new JPSPlusPoint[_map.Width, _map.Height];
             for (int x = 0; x < _map.Width; x++) {
                 for (int y = 0; y < _map.Height; y++) {
-                    _pointsMap[x, y] = new GridPoint(x, y, _map.PassableMap[x, y]);
+                    _pointsMap[x, y] = new JPSPlusPoint(x, y);
                 }
             }
             PreprocessJumpPoints();
             
-            _openList = new PointLibrary(_maxSteps);
-            _closeList = new PointLibrary(_maxSteps);
+            _openList = new PointLibrary(_map.Width * _map.Height);
+            _closeList = new PointLibrary(_map.Width * _map.Height);
         }
 
         public void UpdateMap(RectInt bounds, bool passable) {
@@ -33,18 +33,18 @@ namespace PathFinding {
             }
         }
         
-        private int Heuristic(GridPoint a, GridPoint b) {
+        private int Heuristic(JPSPlusPoint a, JPSPlusPoint b) {
             int dx = Mathf.Abs(a.X - b.X);
             int dy = Mathf.Abs(a.Y - b.Y);
             return (int)Mathf.Sqrt(dx * dx + dy * dy);
         }
         
         #region Theta算法相关
-        private bool LineOfSight(GridPoint parentGridPoint, GridPoint currentGridPoint) {
-            int x0 = parentGridPoint.X;
-            int y0 = parentGridPoint.Y;
-            int x1 = currentGridPoint.X;
-            int y1 = currentGridPoint.Y;
+        private bool LineOfSight(JPSPlusPoint parentJpsPlusPoint, JPSPlusPoint currentJpsPlusPoint) {
+            int x0 = parentJpsPlusPoint.X;
+            int y0 = parentJpsPlusPoint.Y;
+            int x1 = currentJpsPlusPoint.X;
+            int y1 = currentJpsPlusPoint.Y;
 
             int dx = Mathf.Abs(x1 - x0);
             int dy = Mathf.Abs(y1 - y0);
@@ -105,7 +105,7 @@ namespace PathFinding {
             }
         }
 
-        private Vector2Int FindJumpPoint(GridPoint startPoint, Vector2Int direction) {
+        private Vector2Int FindJumpPoint(JPSPlusPoint startPoint, Vector2Int direction) {
             int x = startPoint.X;
             int y = startPoint.Y;
             int dx = direction.x;
@@ -140,7 +140,7 @@ namespace PathFinding {
             }
         }
 
-        public bool HasForcedNeighbor(GridPoint point, Vector2Int direction) {
+        public bool HasForcedNeighbor(JPSPlusPoint point, Vector2Int direction) {
             int x = point.X;
             int y = point.Y;
             int dx = direction.x;
@@ -180,18 +180,14 @@ namespace PathFinding {
             _openList.Clear();
             _closeList.Clear();
         }
-
-        private int _maxSteps = 100;
+        
         private PointLibrary _openList;
         private PointLibrary _closeList;
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
             ResetPointsMap();
             
-            GridPoint startPoint = _pointsMap[start.x, start.y];
-            GridPoint targetPoint = _pointsMap[target.x, target.y];
-            if (!startPoint.IsPassable || !targetPoint.IsPassable || startPoint == targetPoint) {
-                return new List<Vector2Int>(); // 如果起点或终点不可通行，返回空列表
-            }
+            JPSPlusPoint startPoint = _pointsMap[start.x, start.y];
+            JPSPlusPoint targetPoint = _pointsMap[target.x, target.y];
             
             // 初次使用 Theta* 直线检测，判断起点到终点是否连通
             // if (LineOfSight(startPoint, targetPoint)) {
@@ -202,7 +198,7 @@ namespace PathFinding {
             _openList.TryAdd(startPoint);
 
             while (_openList.Count > 0) {
-                var currentPoint = _openList.PopMin();
+                var currentPoint = (JPSPlusPoint)_openList.PopMin();
                 _closeList.TryAdd(currentPoint);
 
                 // 找到目标点
@@ -233,14 +229,14 @@ namespace PathFinding {
         }
 
         // 处理没有跳点数据的邻接节点的函数
-        private void HandleAdjacentPoints(GridPoint currentPoint, GridPoint targetPoint) {
+        private void HandleAdjacentPoints(JPSPlusPoint currentPoint, JPSPlusPoint targetPoint) {
             foreach (Vector2Int direction in SourceMap.Direction2VectorDict.Values) {
                 int adjX = currentPoint.X + direction.x;
                 int adjY = currentPoint.Y + direction.y;
 
                 if (!_map.IsPassable(adjX, adjY)) continue; // 邻接点不可通行，跳过
 
-                GridPoint adjPoint = _pointsMap[adjX, adjY];
+                JPSPlusPoint adjPoint = _pointsMap[adjX, adjY];
 
                 if (_closeList.Contains(adjPoint)) continue; // 邻接点已在闭合列表中，跳过
 
@@ -257,14 +253,14 @@ namespace PathFinding {
         }
 
         // 处理有跳点数据的节点
-        private void HandleJumpPoints(GridPoint currentPoint, GridPoint targetPoint) {
+        private void HandleJumpPoints(JPSPlusPoint currentPoint, JPSPlusPoint targetPoint) {
             foreach (Vector2Int jump in currentPoint.JumpPoints) {
                 int jumpX = jump.x;
                 int jumpY = jump.y;
 
                 if (jumpX == -1 && jumpY == -1) continue; // 无效跳点，跳过
 
-                GridPoint jumpPoint = _pointsMap[jumpX, jumpY];
+                JPSPlusPoint jumpPoint = _pointsMap[jumpX, jumpY];
 
                 if (!_map.IsPassable(jumpX, jumpY) || _closeList.Contains(jumpPoint)) continue; // 跳点不可通行或已在闭合列表中，跳过
 
@@ -278,29 +274,29 @@ namespace PathFinding {
             }
         }
         
-        private List<Vector2Int> RetracePath(GridPoint startGridPoint, GridPoint endGridPoint) {
+        private List<Vector2Int> RetracePath(JPSPlusPoint startJpsPlusPoint, JPSPlusPoint endJpsPlusPoint) {
             List<Vector2Int> path = new List<Vector2Int>();
-            GridPoint currentGridPoint = endGridPoint;
+            JPSPlusPoint currentJpsPlusPoint = endJpsPlusPoint;
 
             // 起点和终点必然是关键点
-            path.Add(new Vector2Int(currentGridPoint.X, currentGridPoint.Y));
+            path.Add(new Vector2Int(currentJpsPlusPoint.X, currentJpsPlusPoint.Y));
 
             // 开始路径回溯
-            while (!Equals(currentGridPoint, startGridPoint)) {
-                GridPoint parentGridPoint = currentGridPoint.P;
+            while (!Equals(currentJpsPlusPoint, startJpsPlusPoint)) {
+                JPSPlusPoint parentJpsPlusPoint = (JPSPlusPoint)currentJpsPlusPoint.P;
 
-                if (parentGridPoint == null) {
+                if (parentJpsPlusPoint == null) {
                     Debug.LogError("Parent node is null during path retrace.");
                     break;  // 防止空引用异常
                 }
 
                 // 添加当前节点为关键点
-                path.Add(new Vector2Int(parentGridPoint.X, parentGridPoint.Y));
-                currentGridPoint = parentGridPoint;
+                path.Add(new Vector2Int(parentJpsPlusPoint.X, parentJpsPlusPoint.Y));
+                currentJpsPlusPoint = parentJpsPlusPoint;
             }
             
             // 最后加入起点为关键点
-            path.Add(new Vector2Int(startGridPoint.X, startGridPoint.Y));
+            path.Add(new Vector2Int(startJpsPlusPoint.X, startJpsPlusPoint.Y));
 
             // 反转路径，使其从起点到终点
             path.Reverse();
@@ -308,45 +304,13 @@ namespace PathFinding {
         }
     }
     
-    public class GridPoint {
-        public readonly int X, Y;
-        public bool IsPassable;
-        public GridPoint P;
-        public int G; // 从起点到当前节点的代价 
-        public int H; // 从当前节点到终点的预估代价
-        public int F; // G + H;
-
+    public class JPSPlusPoint : AStartPoint {
         public Vector2Int[] JumpPoints; // 跳点信息存储结构：每个节点在8个方向的跳点
-        public GridPoint(int x, int y, bool isPassable) {
-            X = x;
-            Y = y;
-            IsPassable = isPassable;
-            Reset();
+        public JPSPlusPoint(int x, int y): base(x,y) {
             JumpPoints = new Vector2Int[8];
             for (int i = 0; i < 8; i++) {
                 JumpPoints[i] = new Vector2Int(-1, -1); // 初始化为无效位置
             }
-        }
-
-        public void Reset() {
-            G = H = 0;
-            F = -1;
-            P = null;
-        }
-        
-        public void SetData(int g, int h, GridPoint p) {
-            G = g;
-            H = h;
-            F = G + H;
-            P = p;
-        }
-
-        public override int GetHashCode() {
-            return HashCode.Combine(X, Y);
-        }
-
-        public override string ToString() {
-            return $"(point -> x: {X}, y: {Y}, f: {F})";
         }
     }
 }

@@ -47,7 +47,13 @@ namespace PathFinding {
                 // 遍历当前节点的相邻节点
                 foreach (var direction in SourceMap.Direction2VectorDict.Values) {
                     Vector2Int neighborPosition = new Vector2Int(current.X + direction.x, current.Y + direction.y);
-                    if (!_map.IsPassable(neighborPosition.x, neighborPosition.y)) continue;
+                    
+                    if (!_map.IsPassable(neighborPosition.x, neighborPosition.y) ||
+                        (direction.x != 0 && direction.y != 0 && // 对角线障碍判断
+                         (!_map.IsPassable(neighborPosition.x, current.Y) || 
+                          !_map.IsPassable(current.X, neighborPosition.y)))) 
+                        continue;
+                    
                     AStartPoint neighbor = _aStartMap[neighborPosition.x, neighborPosition.y];
 
                     // 如果相邻节点已经在封闭列表中，跳过
@@ -58,13 +64,13 @@ namespace PathFinding {
                     if (!openList.Contains(neighbor)) {
                         neighbor.SetData(tentativeG, CalculateHeuristic(neighborPosition, target), current);
                         openList.Add(neighbor);
-                    } else if (tentativeG < neighbor.G) {
+                    }
+                    else if (tentativeG < neighbor.G) {
                         // 如果新的路径更短，更新
-                        neighbor.SetData(tentativeG, CalculateHeuristic(neighborPosition, target), current);
+                        neighbor.SetData(tentativeG, current);
                     }
                 }
             }
-
             return null; // 如果没有找到路径，返回空
         }
 
@@ -101,6 +107,12 @@ namespace PathFinding {
         public void SetData(int g, int h, AStartPoint p) {
             G = g;
             H = h;
+            F = G + H;
+            P = p;
+        }
+        
+        public void SetData(int g, AStartPoint p) {
+            G = g;
             F = G + H;
             P = p;
         }

@@ -53,10 +53,10 @@ namespace PathFinding {
         };
     }
     
-    public class PointLibrary : ICollection<GridPoint>,
-        IReadOnlyCollection<GridPoint> {
+        public class PointLibrary : ICollection<AStartPoint>,
+        IReadOnlyCollection<AStartPoint> {
         private readonly int _maxLength;
-        private readonly HashSet<GridPoint>[] _data;
+        private readonly HashSet<AStartPoint>[] _data;
         private int _minPointer;
 
         public int Count { get; private set; }
@@ -64,15 +64,15 @@ namespace PathFinding {
 
         public PointLibrary(int maxLength) {
             _maxLength = maxLength;
-            _data = new HashSet<GridPoint>[_maxLength];
+            _data = new HashSet<AStartPoint>[_maxLength];
             for (int i = 0; i < _maxLength; i++) {
-                _data[i] = new HashSet<GridPoint>();
+                _data[i] = new HashSet<AStartPoint>();
             }
             _minPointer = _maxLength;
             Count = 0;
         }
 
-        public bool TryAdd(GridPoint point) {
+        public bool TryAdd(AStartPoint point) {
             int index = point.F / 10;
             if (index < 0) {
                 Debug.LogError($"{point}尚未被初始化！");
@@ -96,11 +96,11 @@ namespace PathFinding {
             return true;
         }
 
-        public void Add(GridPoint point) {
+        public void Add(AStartPoint point) {
             TryAdd(point);
         }
 
-        public GridPoint PopMin() {
+        public AStartPoint PopMin() {
             var hashSet = _data[_minPointer];
             var value = hashSet.ElementAt(0);
             hashSet.Remove(value);
@@ -118,17 +118,17 @@ namespace PathFinding {
             return value;
         }
 
-        public bool Contains(GridPoint point) {
+        public bool Contains(AStartPoint point) {
             if (point == null || point.F < 0) return false;
             int index = point.F / 10;
             return index < _maxLength && _data[index].Contains(point);
         }
 
-        public void CopyTo(GridPoint[] array, int arrayIndex) {
+        public void CopyTo(AStartPoint[] array, int arrayIndex) {
             Debug.LogError("PointLibrary不支持拷贝到列表");
         }
 
-        public bool Remove(GridPoint item) {
+        public bool Remove(AStartPoint item) {
             Debug.LogError("PointLibrary不支持单点移除");
             return false;
         }
@@ -141,8 +141,8 @@ namespace PathFinding {
             Count = 0;
         }
 
-        public IEnumerator<GridPoint> GetEnumerator() {
-            List<GridPoint> points = new List<GridPoint>(Count);
+        public IEnumerator<AStartPoint> GetEnumerator() {
+            List<AStartPoint> points = new List<AStartPoint>(Count);
             for (int index = _minPointer; index < _maxLength; index++) {
                 points.AddRange(_data[index]);
             }
