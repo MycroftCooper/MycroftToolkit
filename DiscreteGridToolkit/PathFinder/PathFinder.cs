@@ -12,8 +12,7 @@ namespace PathFinding {
         public Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> Algorithms = new ();
         public Dictionary<PathReprocesses, IPathReprocess> Reprocesses = new ();
 
-        private HeuristicFunctions.HeuristicFunction _commonHeuristicFunction =
-            new HeuristicFunctions.HeuristicFunction(HeuristicType.Manhattan);
+        private HeuristicFunctions.HeuristicFunction _commonHeuristicFunction = new(HeuristicType.Manhattan);
         
         [Button]
         public void SetPassableMap(bool[,] map) {
@@ -110,25 +109,32 @@ namespace PathFinding {
         }
 
         #region Debug相关
-        [ShowInInspector]
-        public bool[,] TestMap = {
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  },
-            { true,  true,  true, false, false, false,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true, false,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true, false,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  },
-            { true,  true,  true,  true,  true,  true,  true,  true,  true,  true  }
-        };
+        [ShowInInspector] public bool[,] TestMap;
         public bool isDebug;
         public PathFinderAlgorithms debugAlgorithm;
         public PathReprocesses debugPathReprocesses;
         public HeuristicType debugHeuristic;
         private PathFindingRequest _debugRequest;
         private Stopwatch _stopwatch;
+        private MazeGenerator _debugMazeGenerator;
+
+        [Button]
+        private void DebugInitTestMap(Vector2Int size) {
+            TestMap = new bool[size.x, size.y];
+            for (int x = 0; x < size.x; x++) {
+                for (int y = 0; y < size.y; y++) {
+                    TestMap[x, y] = true;
+                }
+            }
+        }
+
+        [Button]
+        private void DebugGeneratorMaze(Vector2Int size, int seed) {
+            TestMap = new bool[size.x, size.y];
+            _debugMazeGenerator = new MazeGenerator();
+            TestMap = _debugMazeGenerator.GenerateMaze(size.x, size.y, seed);
+            SetPassableMap(null);
+        }
 
         [Button]
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
@@ -152,7 +158,7 @@ namespace PathFinding {
                 a = GetAlgorithm(_debugRequest.Algorithm, _debugRequest.HeuristicType);
             }
 
-            Gizmos.color = Color.gray; // 默认颜色设置为灰色
+            Gizmos.color = Color.gray;
             Vector3 oPos = transform.position + new Vector3(0.5f, 0.5f);
             // 遍历 passableMap 并绘制格子
             for (int x = 0; x < _map.Width; x++) {
@@ -170,10 +176,18 @@ namespace PathFinding {
         }
         
         private void DrawPath(PathFindingRequest path) {
-            if (path == null || path.ReprocessedPath == null || path.ReprocessedPath.Count == 0) {
+            if (path?.ReprocessedPath == null || path.ReprocessedPath.Count == 0) {
                 return;
             }
             Vector3 oPos = transform.position + new Vector3(0.5f, 0.5f);
+            
+            Gizmos.color = Color.blue;
+            var p = path.StartPos.ToVec3() + oPos + new Vector3(0, 0, 0.2f);
+            Gizmos.DrawCube(p, new Vector3(1, 1, 0.1f));
+            Gizmos.color = new Color(0f, 0f, 0.5f);
+            p = path.EndPos.ToVec3() + oPos + new Vector3(0, 0, 0.2f);
+            Gizmos.DrawCube(p, new Vector3(1, 1, 0.1f));
+            
             Debug.DrawLine(path.StartPos.ToVec3() + oPos, path.ResultPath[0].ToVec3() + oPos, Color.blue);
             for (int i = 0; i < path.ReprocessedPath.Count - 1; i++) {
                 Vector3 startPos = oPos + new Vector3(path.ReprocessedPath[i].x, path.ReprocessedPath[i].y, 0.2f);
