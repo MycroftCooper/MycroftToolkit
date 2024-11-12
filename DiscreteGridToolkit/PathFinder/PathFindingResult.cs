@@ -9,6 +9,7 @@ namespace PathFinding {
 
         public readonly PathFinderAlgorithms Algorithm;
         public readonly PathReprocesses Reprocess;
+        public readonly string HeuristicType;
 
         public readonly bool NeedHandleImmediately;
         public readonly bool CanUseCache;
@@ -28,12 +29,13 @@ namespace PathFinding {
         public readonly Action<PathFindingRequest> PathFoundHandler;
 
         public PathFindingRequest(Vector2Int startPos, Vector2Int endPos, 
-            PathFinderAlgorithms algorithm, PathReprocesses reprocess,
+            PathFinderAlgorithms algorithm, PathReprocesses reprocess, string heuristicType,
             bool canUseCache = false, bool needHandleImmediately = false, Action<PathFindingRequest> pathFoundHandler = null) {
             StartPos = startPos;
             EndPos = endPos;
             Algorithm = algorithm;
             Reprocess = reprocess;
+            HeuristicType = heuristicType;
             CanUseCache = canUseCache;
             NeedHandleImmediately = needHandleImmediately;
             PathFoundHandler = pathFoundHandler;

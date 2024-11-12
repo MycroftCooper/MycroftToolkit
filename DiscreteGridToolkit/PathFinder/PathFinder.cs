@@ -11,6 +11,9 @@ namespace PathFinding {
         private SourceMap _map;
         public Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> Algorithms = new ();
         public Dictionary<PathReprocesses, IPathReprocess> Reprocesses = new ();
+
+        private HeuristicFunctions.HeuristicFunction _commonHeuristicFunction =
+            new HeuristicFunctions.HeuristicFunction(HeuristicType.Manhattan);
         
         [Button]
         public void SetPassableMap(bool[,] map) {
@@ -54,7 +57,7 @@ namespace PathFinding {
             }
 
             if (!request.CanUseCache) {
-                var a = GetAlgorithm(request.Algorithm);
+                var a = GetAlgorithm(request.Algorithm, request.HeuristicType);
                 var resultPath = a.FindPath(request.StartPos, request.EndPos);
                 request.ResultPath = resultPath;
                 var p = GetReprocess(request.Reprocess);
@@ -62,17 +65,29 @@ namespace PathFinding {
             }
         }
 
-        private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType) {
+        private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, string heuristicFunction) {
             if (Algorithms.TryGetValue(algorithmType, out var a)) {
                 return a;
             }
-
+            
             a = algorithmType switch {
                 PathFinderAlgorithms.JPS => new JPS(),
                 PathFinderAlgorithms.JPSPlus => new JPSPlus(),
                 PathFinderAlgorithms.AStar => new AStart(),
                 _ => throw new ArgumentOutOfRangeException(nameof(algorithmType), algorithmType, null)
             };
+            
+            if (string.IsNullOrEmpty(heuristicFunction)) {
+                a.HeuristicFunction = null;
+            } else {
+                if (Enum.TryParse<HeuristicType>(heuristicFunction, out var heuristic)) {
+                    _commonHeuristicFunction.Heuristic = heuristic;
+                    a.HeuristicFunction = _commonHeuristicFunction;
+                } else {
+                    // 反射获取启发式函数
+                }
+            }
+            
             a.InitMap(_map);
             Algorithms.Add(algorithmType, a);
             return a;
@@ -111,6 +126,7 @@ namespace PathFinding {
         public bool isDebug;
         public PathFinderAlgorithms debugAlgorithm;
         public PathReprocesses debugPathReprocesses;
+        public HeuristicType debugHeuristic;
         private PathFindingRequest _debugRequest;
         private Stopwatch _stopwatch;
 
@@ -118,7 +134,8 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugPathReprocesses, false, true);
+            PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugPathReprocesses,
+                debugHeuristic.ToString(), false, true);
             FindPath(request);
             _debugRequest = request;
             _stopwatch.Stop();
@@ -132,7 +149,7 @@ namespace PathFinding {
 
             IPathFinderAlgorithm a = null;
             if (_debugRequest != null) {
-                a = GetAlgorithm(_debugRequest.Algorithm);
+                a = GetAlgorithm(_debugRequest.Algorithm, _debugRequest.HeuristicType);
             }
 
             Gizmos.color = Color.gray; // 默认颜色设置为灰色

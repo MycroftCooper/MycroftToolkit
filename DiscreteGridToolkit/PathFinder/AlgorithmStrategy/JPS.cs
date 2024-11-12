@@ -4,6 +4,7 @@ using UnityEngine;
 namespace PathFinding {
     public class JPS : IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.JPS;
+        public IHeuristicFunction HeuristicFunction { get; set; }
         
         public void InitMap(SourceMap map) {
             throw new System.NotImplementedException();

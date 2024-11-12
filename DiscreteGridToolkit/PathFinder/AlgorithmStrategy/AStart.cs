@@ -5,8 +5,12 @@ using UnityEngine;
 namespace PathFinding {
     public class AStart : IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.AStar;
+        public IHeuristicFunction HeuristicFunction { get; set; }
         private SourceMap _map;
         private AStartPoint[,] _aStartMap;
+        // private List<AStartPoint> _openList; // 节点开放列表
+        private BucketPriorityQueue<AStartPoint> _openList;
+        private HashSet<AStartPoint> _closedList;
         
         public void InitMap(SourceMap map) {
             _map = map;
@@ -16,6 +20,12 @@ namespace PathFinding {
                     _aStartMap[x, y] = new AStartPoint(x, y);
                 }
             }
+            int maxF = HeuristicFunction.CalculateMaxFCost(new Vector2Int(_map.Width, _map.Height));
+            int bucketCount = Mathf.CeilToInt(Mathf.Sqrt(_map.Width * _map.Height));
+            int bucketSize = maxF / bucketCount;
+            // _openList = new List<AStartPoint>();
+            _openList = new BucketPriorityQueue<AStartPoint>(maxF, bucketSize);
+            _closedList = new HashSet<AStartPoint>();
         }
 
         public void UpdateMap(RectInt bounds, bool passable) {
@@ -23,21 +33,22 @@ namespace PathFinding {
         }
 
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
-            var openList = new List<AStartPoint>(); // 节点开放列表
-            var closedList = new HashSet<AStartPoint>(); // 节点封闭列表
+            _openList.Clear();
+            _closedList.Clear();
 
             AStartPoint startPoint = _aStartMap[start.x, start.y];
             AStartPoint targetPoint = _aStartMap[target.x, target.y];
 
-            startPoint.SetData(0, CalculateHeuristic(start, target), null); // 设置起点数据
-            openList.Add(startPoint);
+            startPoint.SetData(0, HeuristicFunction.CalculateHeuristic(start, target), null); // 设置起点数据
+            _openList.Add(startPoint);
 
-            while (openList.Count > 0) {
+            while (_openList.Count > 0) {
                 // 从开放列表中取出F值最小的节点
-                openList.Sort((a, b) => a.F.CompareTo(b.F));
-                AStartPoint current = openList[0];
-                openList.RemoveAt(0);
-                closedList.Add(current);
+                // _openList.Sort((a, b) => a.F.CompareTo(b.F));
+                // AStartPoint current = _openList[0];
+                // _openList.RemoveAt(0);
+                AStartPoint current = _openList.DequeueMin();
+                _closedList.Add(current);
 
                 // 如果到达目标节点，回溯路径
                 if (current == targetPoint) {
@@ -57,17 +68,17 @@ namespace PathFinding {
                     AStartPoint neighbor = _aStartMap[neighborPosition.x, neighborPosition.y];
 
                     // 如果相邻节点已经在封闭列表中，跳过
-                    if (closedList.Contains(neighbor)) continue;
+                    if (_closedList.Contains(neighbor)) continue;
 
                     // 计算G值、H值和F值
-                    int tentativeG = current.G + 1; // 设定步长为1
-                    if (!openList.Contains(neighbor)) {
-                        neighbor.SetData(tentativeG, CalculateHeuristic(neighborPosition, target), current);
-                        openList.Add(neighbor);
-                    }
-                    else if (tentativeG < neighbor.G) {
-                        // 如果新的路径更短，更新
-                        neighbor.SetData(tentativeG, current);
+                    int tentativeG = current.G + 1;
+                    if (!_openList.Contains(neighbor)) {
+                        neighbor.SetData(tentativeG, HeuristicFunction.CalculateHeuristic(neighborPosition, target), current);
+                        _openList.Add(neighbor);
+                    }else if (tentativeG < neighbor.G) {
+                        _openList.Remove(neighbor);
+                        neighbor.SetData(tentativeG, current);// 如果新的路径更短，更新
+                        _openList.Add(neighbor);
                     }
                 }
             }
@@ -75,10 +86,6 @@ namespace PathFinding {
         }
 
         public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) { }
-
-        private int CalculateHeuristic(Vector2Int a, Vector2Int b) {
-            return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y); // 曼哈顿距离
-        }
         
         // 回溯路径
         private List<Vector2Int> ReconstructPath(AStartPoint current) {
@@ -91,12 +98,13 @@ namespace PathFinding {
         }
     }
     
-    public class AStartPoint {
+    public class AStartPoint : BucketPriorityQueue<AStartPoint>.IBucketPriorityQueueItem {
         public readonly int X, Y;
         public AStartPoint P;
         public int G; // 从起点到当前节点的代价 
         public int H; // 从当前节点到终点的预估代价
         public int F; // G + H;
+        public int PriorityValue => F;
         
         public AStartPoint(int x, int y) {
             X = x;

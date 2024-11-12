@@ -6,6 +6,7 @@ using UnityEngine;
 namespace PathFinding {
     public class JPSPlus : IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.JPSPlus;
+        public IHeuristicFunction HeuristicFunction { get; set; }
         private SourceMap _map;
         private JPSPlusPoint[,] _pointsMap;
         
@@ -32,53 +33,6 @@ namespace PathFinding {
                 }
             }
         }
-        
-        private int Heuristic(JPSPlusPoint a, JPSPlusPoint b) {
-            int dx = Mathf.Abs(a.X - b.X);
-            int dy = Mathf.Abs(a.Y - b.Y);
-            return (int)Mathf.Sqrt(dx * dx + dy * dy);
-        }
-        
-        #region Theta算法相关
-        private bool LineOfSight(JPSPlusPoint parentJpsPlusPoint, JPSPlusPoint currentJpsPlusPoint) {
-            int x0 = parentJpsPlusPoint.X;
-            int y0 = parentJpsPlusPoint.Y;
-            int x1 = currentJpsPlusPoint.X;
-            int y1 = currentJpsPlusPoint.Y;
-
-            int dx = Mathf.Abs(x1 - x0);
-            int dy = Mathf.Abs(y1 - y0);
-            int sx = (x0 < x1) ? 1 : -1;
-            int sy = (y0 < y1) ? 1 : -1;
-            int err = dx - dy;
-
-            while (true) {
-                // 如果当前格子不可通过，返回 false
-                if (!_map.IsPassable(x0, y0)) return false;
-
-                // 检查对角线穿越障碍的情况
-                if (dx != 0 && dy != 0) { // 如果沿对角线移动
-                    if (!_map.IsPassable(x0 - sx, y0, false) && !_map.IsPassable(x0, y0 - sy, false)) {
-                        // 如果水平和垂直方向都被阻挡，则阻止对角线穿越
-                        return false;
-                    }
-                }
-
-                // 如果到达目标节点，返回 true
-                if (x0 == x1 && y0 == y1) return true;
-
-                int e2 = 2 * err;
-                if (e2 > -dy) {
-                    err -= dy;
-                    x0 += sx;
-                }
-                if (e2 < dx) {
-                    err += dx;
-                    y0 += sy;
-                }
-            }
-        }
-        #endregion
 
         #region 跳点相关
 
@@ -194,7 +148,7 @@ namespace PathFinding {
             //     return new List<Vector2Int> { target };
             // }
             
-            startPoint.SetData(0, Heuristic(startPoint, targetPoint), null);
+            // startPoint.SetData(0, Heuristic.CalculateHeuristic(startPoint, targetPoint), null);
             _openList.TryAdd(startPoint);
 
             while (_openList.Count > 0) {
@@ -209,9 +163,9 @@ namespace PathFinding {
 
                 // 根据是否有跳点数据，选择相应的处理方法
                 if (currentPoint.JumpPoints.All(jp => jp == new Vector2Int(-1, -1))) {
-                    HandleAdjacentPoints(currentPoint, targetPoint);
+                    // HandleAdjacentPoints(currentPoint, targetPoint);
                 } else {
-                    HandleJumpPoints(currentPoint, targetPoint);
+                    // HandleJumpPoints(currentPoint, targetPoint);
                 }
             }
 
@@ -225,52 +179,6 @@ namespace PathFinding {
                 Vector3 position = originPos + new Vector3(x, y, 0); // 将网格位置映射到世界空间
                 Gizmos.color = Color.yellow; // 边框颜色设置为黑色
                 Gizmos.DrawCube(position, new Vector3(0.8f, 0.8f, 0.1f));
-            }
-        }
-
-        // 处理没有跳点数据的邻接节点的函数
-        private void HandleAdjacentPoints(JPSPlusPoint currentPoint, JPSPlusPoint targetPoint) {
-            foreach (Vector2Int direction in SourceMap.Direction2VectorDict.Values) {
-                int adjX = currentPoint.X + direction.x;
-                int adjY = currentPoint.Y + direction.y;
-
-                if (!_map.IsPassable(adjX, adjY)) continue; // 邻接点不可通行，跳过
-
-                JPSPlusPoint adjPoint = _pointsMap[adjX, adjY];
-
-                if (_closeList.Contains(adjPoint)) continue; // 邻接点已在闭合列表中，跳过
-
-                // 计算G和H值
-                int gCost = currentPoint.G + Heuristic(currentPoint, adjPoint);
-                int hCost = Heuristic(adjPoint, targetPoint);
-                adjPoint.SetData(gCost, hCost, currentPoint);
-
-                // 如果邻接点不在开放列表中，将其添加
-                if (!_openList.Contains(adjPoint)) {
-                    _openList.TryAdd(adjPoint);
-                }
-            }
-        }
-
-        // 处理有跳点数据的节点
-        private void HandleJumpPoints(JPSPlusPoint currentPoint, JPSPlusPoint targetPoint) {
-            foreach (Vector2Int jump in currentPoint.JumpPoints) {
-                int jumpX = jump.x;
-                int jumpY = jump.y;
-
-                if (jumpX == -1 && jumpY == -1) continue; // 无效跳点，跳过
-
-                JPSPlusPoint jumpPoint = _pointsMap[jumpX, jumpY];
-
-                if (!_map.IsPassable(jumpX, jumpY) || _closeList.Contains(jumpPoint)) continue; // 跳点不可通行或已在闭合列表中，跳过
-
-                // 计算G和H值
-                int gCost = currentPoint.G + Heuristic(currentPoint, jumpPoint);
-                int hCost = Heuristic(jumpPoint, targetPoint);
-                jumpPoint.SetData(gCost, hCost, currentPoint);
-
-                // 如果跳点不在开放列表中，添加它
-                _openList.TryAdd(jumpPoint);
             }
         }
         
