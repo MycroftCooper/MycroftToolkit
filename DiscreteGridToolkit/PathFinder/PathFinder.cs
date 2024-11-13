@@ -11,7 +11,7 @@ namespace PathFinding {
         private SourceMap _map;
         public Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> Algorithms = new ();
         public Dictionary<PathReprocesses, IPathReprocess> Reprocesses = new ();
-        private readonly HeuristicFunctions.CommonHeuristicFunction commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
+        private readonly HeuristicFunctions.CommonHeuristicFunction _commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
         
         [Button]
         public void SetPassableMap(bool[,] map) {
@@ -84,8 +84,8 @@ namespace PathFinding {
                 a.HeuristicFunction = null;
             } else {
                 if (Enum.TryParse<HeuristicTypes>(heuristicFunction, out var heuristic)) {
-                    commonCommonHeuristicFunction.HeuristicType = heuristic;
-                    a.HeuristicFunction = commonCommonHeuristicFunction;
+                    _commonCommonHeuristicFunction.HeuristicType = heuristic;
+                    a.HeuristicFunction = _commonCommonHeuristicFunction;
                 } else {
                     // 反射获取启发式函数
                 }
@@ -147,7 +147,6 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            debugAlgorithm = PathFinderAlgorithms.JPS;
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
                 debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);
