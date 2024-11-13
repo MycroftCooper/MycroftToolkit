@@ -5,10 +5,10 @@ using UnityEngine;
 namespace PathFinding {
     public class AStart : IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.AStar;
-        public IHeuristicFunction HeuristicFunction { get; set; }
+        public bool NeedBestSolution { get; set; }
+        public HeuristicFunctionBase HeuristicFunction { get; set; }
         private SourceMap _map;
         private AStartPoint[,] _aStartMap;
-        // private List<AStartPoint> _openList; // 节点开放列表
         private BucketPriorityQueue<AStartPoint> _openList;
         private HashSet<AStartPoint> _closedList;
         
@@ -23,18 +23,16 @@ namespace PathFinding {
             int maxF = HeuristicFunction.CalculateMaxFCost(new Vector2Int(_map.Width, _map.Height));
             int bucketCount = Mathf.CeilToInt(Mathf.Sqrt(_map.Width * _map.Height));
             int bucketSize = maxF / bucketCount;
-            // _openList = new List<AStartPoint>();
             _openList = new BucketPriorityQueue<AStartPoint>(maxF, bucketSize);
             _closedList = new HashSet<AStartPoint>();
         }
 
-        public void UpdateMap(RectInt bounds, bool passable) {
-            _map.UpdateMap(bounds, passable);
-        }
+        public void UpdateMap(RectInt bounds, bool passable) { }
 
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
             _openList.Clear();
             _closedList.Clear();
+            _openList.NeedBestSolution = NeedBestSolution;
 
             AStartPoint startPoint = _aStartMap[start.x, start.y];
             AStartPoint targetPoint = _aStartMap[target.x, target.y];
@@ -43,10 +41,6 @@ namespace PathFinding {
             _openList.Add(startPoint);
 
             while (_openList.Count > 0) {
-                // 从开放列表中取出F值最小的节点
-                // _openList.Sort((a, b) => a.F.CompareTo(b.F));
-                // AStartPoint current = _openList[0];
-                // _openList.RemoveAt(0);
                 AStartPoint current = _openList.DequeueMin();
                 _closedList.Add(current);
 
@@ -100,6 +94,7 @@ namespace PathFinding {
     
     public class AStartPoint : BucketPriorityQueue<AStartPoint>.IBucketPriorityQueueItem {
         public readonly int X, Y;
+        public readonly Vector2Int Pos;
         public AStartPoint P;
         public int G; // 从起点到当前节点的代价 
         public int H; // 从当前节点到终点的预估代价
@@ -109,6 +104,7 @@ namespace PathFinding {
         public AStartPoint(int x, int y) {
             X = x;
             Y = y;
+            Pos = new Vector2Int(X, Y);
             Reset();
         }
         

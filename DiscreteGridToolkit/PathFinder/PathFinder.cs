@@ -11,8 +11,7 @@ namespace PathFinding {
         private SourceMap _map;
         public Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> Algorithms = new ();
         public Dictionary<PathReprocesses, IPathReprocess> Reprocesses = new ();
-
-        private HeuristicFunctions.HeuristicFunction _commonHeuristicFunction = new(HeuristicType.Manhattan);
+        private readonly HeuristicFunctions.CommonHeuristicFunction commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
         
         [Button]
         public void SetPassableMap(bool[,] map) {
@@ -29,6 +28,10 @@ namespace PathFinding {
 
         [Button]
         public void UpdatePassableMap(RectInt bounds, bool passable) {
+            if (!_map.IsInBounds(bounds.min.x, bounds.min.y) || !_map.IsInBounds(bounds.max.x, bounds.max.y)) {
+                Debug.LogError($"Bounds{bounds} is not in Map bounds!");
+                return;
+            }
             _map.UpdateMap(bounds, passable);
             if(Algorithms.Count != 0) {
                 foreach (var a in Algorithms.Values) {
@@ -57,6 +60,7 @@ namespace PathFinding {
 
             if (!request.CanUseCache) {
                 var a = GetAlgorithm(request.Algorithm, request.HeuristicType);
+                a.NeedBestSolution = request.NeedBestSolution;
                 var resultPath = a.FindPath(request.StartPos, request.EndPos);
                 request.ResultPath = resultPath;
                 var p = GetReprocess(request.Reprocess);
@@ -79,9 +83,9 @@ namespace PathFinding {
             if (string.IsNullOrEmpty(heuristicFunction)) {
                 a.HeuristicFunction = null;
             } else {
-                if (Enum.TryParse<HeuristicType>(heuristicFunction, out var heuristic)) {
-                    _commonHeuristicFunction.Heuristic = heuristic;
-                    a.HeuristicFunction = _commonHeuristicFunction;
+                if (Enum.TryParse<HeuristicTypes>(heuristicFunction, out var heuristic)) {
+                    commonCommonHeuristicFunction.HeuristicType = heuristic;
+                    a.HeuristicFunction = commonCommonHeuristicFunction;
                 } else {
                     // 反射获取启发式函数
                 }
@@ -109,11 +113,12 @@ namespace PathFinding {
         }
 
         #region Debug相关
-        [ShowInInspector] public bool[,] TestMap;
         public bool isDebug;
-        public PathFinderAlgorithms debugAlgorithm;
-        public PathReprocesses debugPathReprocesses;
-        public HeuristicType debugHeuristic;
+        [ShowInInspector] public bool[,] TestMap;
+        public bool debugNeedBestSolution = true;
+        public PathFinderAlgorithms debugAlgorithm = PathFinderAlgorithms.JPS;
+        public PathReprocesses debugPathReprocesses = PathReprocesses.None;
+        public HeuristicTypes debugHeuristic = HeuristicTypes.Manhattan;
         private PathFindingRequest _debugRequest;
         private Stopwatch _stopwatch;
         private MazeGenerator _debugMazeGenerator;
@@ -126,13 +131,15 @@ namespace PathFinding {
                     TestMap[x, y] = true;
                 }
             }
+            SetPassableMap(TestMap);
         }
 
         [Button]
         private void DebugGeneratorMaze(Vector2Int size, int seed) {
+            size = new Vector2Int(101, 100);
             TestMap = new bool[size.x, size.y];
             _debugMazeGenerator = new MazeGenerator();
-            TestMap = _debugMazeGenerator.GenerateMaze(size.x, size.y, seed);
+            TestMap = _debugMazeGenerator.GenerateMaze(size,seed, new Vector2Int(1,0), new Vector2Int(99,99));
             SetPassableMap(null);
         }
 
@@ -140,12 +147,13 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugPathReprocesses,
-                debugHeuristic.ToString(), false, true);
+            debugAlgorithm = PathFinderAlgorithms.JPS;
+            PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
+                debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);
             _debugRequest = request;
             _stopwatch.Stop();
-            Debug.Log($"Pathfinding completed in {_stopwatch.ElapsedMilliseconds} ms.");
+            Debug.Log($"Pathfinding completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.");
         }
         
         void OnDrawGizmos() {

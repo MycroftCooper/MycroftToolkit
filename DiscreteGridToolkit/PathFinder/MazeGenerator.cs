@@ -1,76 +1,81 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Random = System.Random;
-
 
 namespace PathFinding {
     public class MazeGenerator {
 
-        // 生成迷宫，返回迷宫网格
-    public bool[,] GenerateMaze(int width, int height, int seed)
-    {
-        System.Random rng = new System.Random(seed); // 设置随机种子
-        bool[,] mazeGrid = new bool[width, height]; // 迷宫格子
-        bool[,] visitedCells = new bool[width, height]; // 已访问的格子（使用bool数组提高效率）
-        List<Vector2Int> walls = new List<Vector2Int>(); // 墙壁列表
+        public bool[,] GenerateMaze(Vector2Int mazeSize, int seed, Vector2Int startPoint, Vector2Int endPoint) {
+            // Initialize the maze: false means wall, true means path.
+            bool[,] maze = new bool[mazeSize.x, mazeSize.y];
 
-        // 初始格子设置为已访问
-        Vector2Int startCell = new Vector2Int(rng.Next(0, width), rng.Next(0, height));
-        visitedCells[startCell.x, startCell.y] = true;
+            // Set up random generator.
+            System.Random random = new System.Random(seed);
 
-        // 添加周围的墙壁
-        AddWallsAroundCell(startCell, width, height, visitedCells, walls);
+            // List to store unvisited cells for the algorithm.
+            List<Vector2Int> stack = new List<Vector2Int>();
 
-        while (walls.Count > 0)
-        {
-            // 随机选择一堵墙
-            int randomWallIndex = rng.Next(0, walls.Count);
-            Vector2Int wall = walls[randomWallIndex];
-            walls.RemoveAt(randomWallIndex);
+            // Start from the given starting point.
+            Vector2Int currentCell = startPoint;
+            maze[currentCell.x, currentCell.y] = true; // Mark as path.
+            stack.Add(currentCell);
 
-            // 获取墙壁两侧的单元格
-            Vector2Int cell1 = wall;
-            Vector2Int cell2 = new Vector2Int(wall.x + (wall.x % 2 == 0 ? 1 : -1), wall.y + (wall.y % 2 == 0 ? 1 : -1));
+            // Directions for neighbors (left, right, up, down).
+            Vector2Int[] directions = {
+                new Vector2Int(-2, 0), // Left
+                new Vector2Int(2, 0), // Right
+                new Vector2Int(0, 2), // Up
+                new Vector2Int(0, -2) // Down
+            };
 
-            // 如果其中一个格子已访问，且另一个未访问，则打通这堵墙
-            if (IsValidCell(cell2, width, height) && !visitedCells[cell2.x, cell2.y])
-            {
-                mazeGrid[cell1.x, cell1.y] = true; // 打通墙壁
-                visitedCells[cell2.x, cell2.y] = true;
-                AddWallsAroundCell(cell2, width, height, visitedCells, walls);
+            // Algorithm: Randomized DFS
+            while (stack.Count > 0) {
+                // Get current cell.
+                currentCell = stack[^1];
+                stack.RemoveAt(stack.Count - 1);
+
+                // Shuffle directions for randomness.
+                Shuffle(directions, random);
+
+                bool foundUnvisitedNeighbor = false;
+                foreach (var direction in directions) {
+                    Vector2Int neighbor = currentCell + direction;
+
+                    // Check if neighbor is within bounds and is a wall.
+                    if (IsInBounds(neighbor, mazeSize) && !maze[neighbor.x, neighbor.y]) {
+                        // Carve a path between current cell and neighbor.
+                        Vector2Int wall = currentCell + direction / 2;
+                        maze[wall.x, wall.y] = true; // Remove wall.
+                        maze[neighbor.x, neighbor.y] = true; // Mark neighbor as path.
+
+                        // Add neighbor to stack for further exploration.
+                        stack.Add(neighbor);
+                        foundUnvisitedNeighbor = true;
+                    }
+                }
+
+                // If no unvisited neighbors, backtrack (handled by removing from stack).
+            }
+
+            // Ensure the endpoint is reachable by setting it to true if not already.
+            if (!maze[endPoint.x, endPoint.y]) {
+                maze[endPoint.x, endPoint.y] = true;
+            }
+
+            return maze;
+        }
+
+        // Check if a position is within bounds of the maze.
+        private bool IsInBounds(Vector2Int pos, Vector2Int mazeSize) {
+            return pos.x > 0 && pos.y > 0 && pos.x < mazeSize.x - 1 && pos.y < mazeSize.y - 1;
+        }
+
+        // Shuffle array using Fisher-Yates algorithm.
+        private void Shuffle(Vector2Int[] array, System.Random random) {
+            for (int i = array.Length - 1; i > 0; i--) {
+                int j = random.Next(0, i + 1);
+                (array[i], array[j]) = (array[j], array[i]);
             }
         }
 
-        return mazeGrid; // 返回生成的迷宫网格
-    }
-
-    // 判断坐标是否合法
-    bool IsValidCell(Vector2Int cell, int width, int height)
-    {
-        return cell.x >= 0 && cell.x < width && cell.y >= 0 && cell.y < height;
-    }
-
-    // 添加围绕某个格子的墙壁
-    void AddWallsAroundCell(Vector2Int cell, int width, int height, bool[,] visitedCells, List<Vector2Int> walls)
-    {
-        Vector2Int[] directions = new Vector2Int[]
-        {
-            new Vector2Int(0, -1), // 上
-            new Vector2Int(1, 0), // 右
-            new Vector2Int(0, 1), // 下
-            new Vector2Int(-1, 0) // 左
-        };
-
-        foreach (var dir in directions)
-        {
-            Vector2Int neighbor = cell + dir;
-            if (IsValidCell(neighbor, width, height) && !visitedCells[neighbor.x, neighbor.y])
-            {
-                // 添加墙壁
-                walls.Add(neighbor);
-            }
-        }
-    }
     }
 }

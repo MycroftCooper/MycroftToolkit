@@ -23,6 +23,10 @@ namespace PathFinding {
             return x < 0 || x >= Width || y < 0 || y >= Height || PassableMap[x, y];
         }
 
+        public bool IsInBounds(int x, int y) {
+            return x >= 0 && x < Width && y >= 0 && y < Height;
+        }
+
         public void UpdateMap(RectInt bounds, bool passable) {
             for (int x = bounds.xMin; x < bounds.xMax; x++) {
                 for (int y = bounds.yMin; y < bounds.yMax; y++) {
@@ -95,150 +99,34 @@ namespace PathFinding {
     }
 
     public static class HeuristicFunctions {
-        public class HeuristicFunction : IHeuristicFunction {
-            public HeuristicType Heuristic { get; set; }
-            
-            public HeuristicFunction(HeuristicType type) {
-                Heuristic = type;
+        public class CommonHeuristicFunction : HeuristicFunctionBase {
+            public CommonHeuristicFunction(HeuristicTypes types) {
+                HeuristicType = types;
             }
-            public int CalculateHeuristic(Vector2Int a, Vector2Int b) {
-                return HeuristicFunctions.CalculateHeuristic(Heuristic, a, b);
-            }
-
-            public int CalculateMaxFCost(Vector2Int mapSize) {
-                return HeuristicFunctions.CalculateMaxFCost(Heuristic, mapSize);
+            public override int CalculateHeuristic(Vector2Int a, Vector2Int b) {
+                return HeuristicFunctions.CalculateHeuristic(HeuristicType, a, b);
             }
         }
 
         public const int DiagonalCost = 2;
         public const int StraightCost = 1;
-        public static int CalculateHeuristic(HeuristicType type, Vector2Int a, Vector2Int b) {
-            switch (type) {
-                case HeuristicType.Manhattan:
+        public static int CalculateHeuristic(HeuristicTypes types, Vector2Int a, Vector2Int b) {
+            switch (types) {
+                case HeuristicTypes.Manhattan:
                     return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y); // 曼哈顿距离
-                case HeuristicType.Euclidean:
+                case HeuristicTypes.Euclidean:
                     return (int)Math.Sqrt(Math.Pow(a.x - b.x, 2) + Math.Pow(a.y - b.y, 2));// 欧式
-                case HeuristicType.SquaredEuclidean:
+                case HeuristicTypes.SquaredEuclidean:
                     return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);// 欧式平方
-                case HeuristicType.Diagonal:
+                case HeuristicTypes.Diagonal:
                     return Math.Max(Math.Abs(a.x - b.x), Math.Abs(a.y - b.y));
-                case HeuristicType.WeightedDiagonal:
+                case HeuristicTypes.WeightedDiagonal:
                     int deltaX = Math.Abs(a.x - b.x);
                     int deltaY = Math.Abs(a.y - b.y);
                     return DiagonalCost * Math.Min(deltaX, deltaY) + StraightCost * Math.Abs(deltaX - deltaY);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+                    throw new ArgumentOutOfRangeException(nameof(types), types, null);
             }
-        }
-
-        public static int CalculateMaxFCost(HeuristicType type, Vector2Int mapSize) {
-            int width = mapSize.x;
-            int height = mapSize.y;
-            int maxG = 2 * (width + height);// 通用的 G 值最大计算：沿地图边界绕一圈的代价
-            int maxF = CalculateHeuristic(type, Vector2Int.zero, mapSize - Vector2Int.one);
-            return maxG + maxF;
-        }
-    }
-    
-    public class PointLibrary : ICollection<AStartPoint>,
-        IReadOnlyCollection<AStartPoint> {
-        private readonly int _maxLength;
-        private readonly HashSet<AStartPoint>[] _data;
-        private int _minPointer;
-
-        public int Count { get; private set; }
-        public bool IsReadOnly => false;
-
-        public PointLibrary(int maxLength) {
-            _maxLength = maxLength;
-            _data = new HashSet<AStartPoint>[_maxLength];
-            for (int i = 0; i < _maxLength; i++) {
-                _data[i] = new HashSet<AStartPoint>();
-            }
-            _minPointer = _maxLength;
-            Count = 0;
-        }
-
-        public bool TryAdd(AStartPoint point) {
-            int index = point.F / 10;
-            if (index < 0) {
-                Debug.LogError($"{point}尚未被初始化！");
-                return false;
-            }
-
-            if (index >= _maxLength) {
-                return false;
-            }
-
-            if (!_data[index].Add(point)) {
-                return false;
-            }
-
-            Count++;
-                
-            if (_minPointer > index) {
-                _minPointer = index;
-            }
-
-            return true;
-        }
-
-        public void Add(AStartPoint point) {
-            TryAdd(point);
-        }
-
-        public AStartPoint PopMin() {
-            var hashSet = _data[_minPointer];
-            var value = hashSet.ElementAt(0);
-            hashSet.Remove(value);
-            Count--;
-
-            if (Count == 0) {
-                _minPointer = _maxLength;
-            }
-            else if (hashSet.Count == 0) {
-                do {
-                    _minPointer++;
-                } while (_data[_minPointer].Count == 0);
-            }
-
-            return value;
-        }
-
-        public bool Contains(AStartPoint point) {
-            if (point == null || point.F < 0) return false;
-            int index = point.F / 10;
-            return index < _maxLength && _data[index].Contains(point);
-        }
-
-        public void CopyTo(AStartPoint[] array, int arrayIndex) {
-            Debug.LogError("PointLibrary不支持拷贝到列表");
-        }
-
-        public bool Remove(AStartPoint item) {
-            Debug.LogError("PointLibrary不支持单点移除");
-            return false;
-        }
-        
-        public void Clear() {
-            for (int i = 0; i < _maxLength; i++) {
-                _data[i].Clear();
-            }
-            _minPointer = _maxLength;
-            Count = 0;
-        }
-
-        public IEnumerator<AStartPoint> GetEnumerator() {
-            List<AStartPoint> points = new List<AStartPoint>(Count);
-            for (int index = _minPointer; index < _maxLength; index++) {
-                points.AddRange(_data[index]);
-            }
-
-            return points.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() {
-            return GetEnumerator();
         }
     }
         

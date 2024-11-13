@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -6,7 +5,8 @@ using UnityEngine;
 namespace PathFinding {
     public class JPSPlus : IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.JPSPlus;
-        public IHeuristicFunction HeuristicFunction { get; set; }
+        public bool NeedBestSolution { get; set; }
+        public HeuristicFunctionBase HeuristicFunction { get; set; }
         private SourceMap _map;
         private JPSPlusPoint[,] _pointsMap;
         
@@ -20,8 +20,6 @@ namespace PathFinding {
             }
             PreprocessJumpPoints();
             
-            _openList = new PointLibrary(_map.Width * _map.Height);
-            _closeList = new PointLibrary(_map.Width * _map.Height);
         }
 
         public void UpdateMap(RectInt bounds, bool passable) {
@@ -125,51 +123,11 @@ namespace PathFinding {
         #endregion
         
         private void ResetPointsMap() {
-            for (int x = 0; x < _map.Width; x++) {
-                for (int y = 0; y < _map.Height; y++) {
-                    _pointsMap[x, y].Reset();
-                }
-            }
-            
-            _openList.Clear();
-            _closeList.Clear();
+
         }
         
-        private PointLibrary _openList;
-        private PointLibrary _closeList;
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
-            ResetPointsMap();
-            
-            JPSPlusPoint startPoint = _pointsMap[start.x, start.y];
-            JPSPlusPoint targetPoint = _pointsMap[target.x, target.y];
-            
-            // 初次使用 Theta* 直线检测，判断起点到终点是否连通
-            // if (LineOfSight(startPoint, targetPoint)) {
-            //     return new List<Vector2Int> { target };
-            // }
-            
-            // startPoint.SetData(0, Heuristic.CalculateHeuristic(startPoint, targetPoint), null);
-            _openList.TryAdd(startPoint);
-
-            while (_openList.Count > 0) {
-                var currentPoint = (JPSPlusPoint)_openList.PopMin();
-                _closeList.TryAdd(currentPoint);
-
-                // 找到目标点
-                if (currentPoint == targetPoint) {
-                    List<Vector2Int> path = RetracePath(startPoint, currentPoint);
-                    return path;
-                }
-
-                // 根据是否有跳点数据，选择相应的处理方法
-                if (currentPoint.JumpPoints.All(jp => jp == new Vector2Int(-1, -1))) {
-                    // HandleAdjacentPoints(currentPoint, targetPoint);
-                } else {
-                    // HandleJumpPoints(currentPoint, targetPoint);
-                }
-            }
-
-            return new List<Vector2Int>(); // 如果没有找到路径，返回空列表
+            return null;
         }
 
         public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) {
@@ -180,35 +138,6 @@ namespace PathFinding {
                 Gizmos.color = Color.yellow; // 边框颜色设置为黑色
                 Gizmos.DrawCube(position, new Vector3(0.8f, 0.8f, 0.1f));
             }
-        }
-        
-        private List<Vector2Int> RetracePath(JPSPlusPoint startJpsPlusPoint, JPSPlusPoint endJpsPlusPoint) {
-            List<Vector2Int> path = new List<Vector2Int>();
-            JPSPlusPoint currentJpsPlusPoint = endJpsPlusPoint;
-
-            // 起点和终点必然是关键点
-            path.Add(new Vector2Int(currentJpsPlusPoint.X, currentJpsPlusPoint.Y));
-
-            // 开始路径回溯
-            while (!Equals(currentJpsPlusPoint, startJpsPlusPoint)) {
-                JPSPlusPoint parentJpsPlusPoint = (JPSPlusPoint)currentJpsPlusPoint.P;
-
-                if (parentJpsPlusPoint == null) {
-                    Debug.LogError("Parent node is null during path retrace.");
-                    break;  // 防止空引用异常
-                }
-
-                // 添加当前节点为关键点
-                path.Add(new Vector2Int(parentJpsPlusPoint.X, parentJpsPlusPoint.Y));
-                currentJpsPlusPoint = parentJpsPlusPoint;
-            }
-            
-            // 最后加入起点为关键点
-            path.Add(new Vector2Int(startJpsPlusPoint.X, startJpsPlusPoint.Y));
-
-            // 反转路径，使其从起点到终点
-            path.Reverse();
-            return path;
         }
     }
     
