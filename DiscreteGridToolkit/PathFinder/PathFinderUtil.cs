@@ -92,6 +92,10 @@ namespace PathFinding {
             }
         }
         
+        public override string ToString() {
+            return "SourceMap> Width: {Width},Height: {Height},\tCanDiagonallyPassByObstacle: {CanDiagonallyPassByObstacle}";
+        }
+        
         public enum Directions { Up, Down, Left, Right, LeftUp, RightUp, LeftDown, RightDown, Length }
         public static readonly Dictionary<Directions, Vector2Int> Direction2VectorDict = new() {
             { Directions.Up, Vector2Int.up },

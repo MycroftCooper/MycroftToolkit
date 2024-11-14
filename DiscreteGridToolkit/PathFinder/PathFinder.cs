@@ -173,7 +173,8 @@ namespace PathFinding {
             FindPath(request);
             _debugRequest = request;
             _stopwatch.Stop();
-            Debug.Log($"Pathfinding completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.");
+            Debug.Log($"Pathfinder> DebugRequest completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.\n\n" +
+                      $"{_debugRequest}\n\n{_map}");
         }
         
         void OnDrawGizmos() {

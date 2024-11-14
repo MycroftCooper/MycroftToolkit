@@ -42,5 +42,16 @@ namespace PathFinding {
             NeedHandleImmediately = needHandleImmediately;
             PathFoundHandler = pathFoundHandler;
         }
+        
+        public override string ToString() {
+            return "PathFindingRequest {{\n" +
+                   $"  StartPos: {StartPos},\tEndPos: {EndPos},\n" +
+                   $"  NeedBestSolution: {NeedBestSolution},\tAlgorithm: {Algorithm},\tHeuristicType: {HeuristicType},\n" +
+                   $"  Reprocess: {Reprocess},\n" +
+                   $"  NeedHandleImmediately: {NeedHandleImmediately},\tCanUseCache: {CanUseCache},\n" +
+                   $"  ResultPathCount: {(ResultPath != null ? ResultPath.Count.ToString() : "null")}\t" +
+                   $"ReprocessedPathCount: {(ReprocessedPath != null ? ReprocessedPath.Count.ToString() : "null")}\n" +
+                   "}}";
+        }
     }
 }
