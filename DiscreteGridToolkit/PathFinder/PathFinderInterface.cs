@@ -18,10 +18,10 @@ namespace PathFinding {
 
     public abstract class HeuristicFunctionBase {
         public HeuristicTypes HeuristicType { get; set; }
-        public abstract int CalculateHeuristic(Vector2Int a, Vector2Int b);
+        public abstract int CalculateHeuristic(int aX, int aY, int bX, int bY);
         public int CalculateMaxFCost(Vector2Int mapSize) {
             int maxG = mapSize.x * mapSize.y;// 通用的 G 值最大计算：沿地图边界绕一圈的代价
-            int maxF = CalculateHeuristic(Vector2Int.zero, mapSize - Vector2Int.one);
+            int maxF = CalculateHeuristic(0, 0, mapSize.x - 1, mapSize.y -1);
             return maxG + maxF;
         }
     }

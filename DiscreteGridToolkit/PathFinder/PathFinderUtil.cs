@@ -103,26 +103,26 @@ namespace PathFinding {
             public CommonHeuristicFunction(HeuristicTypes types) {
                 HeuristicType = types;
             }
-            public override int CalculateHeuristic(Vector2Int a, Vector2Int b) {
-                return HeuristicFunctions.CalculateHeuristic(HeuristicType, a, b);
+            public override int CalculateHeuristic(int aX, int aY, int bX, int bY) {
+                return HeuristicFunctions.CalculateHeuristic(HeuristicType, aX, aY, bX, bY);
             }
         }
 
         public const int DiagonalCost = 2;
         public const int StraightCost = 1;
-        public static int CalculateHeuristic(HeuristicTypes types, Vector2Int a, Vector2Int b) {
+        public static int CalculateHeuristic(HeuristicTypes types, int aX, int aY, int bX, int bY) {
             switch (types) {
                 case HeuristicTypes.Manhattan:
-                    return Mathf.Abs(a.x - b.x) + Mathf.Abs(a.y - b.y); // 曼哈顿距离
+                    return Mathf.Abs(aX - bX) + Mathf.Abs(aY - bY); // 曼哈顿距离
                 case HeuristicTypes.Euclidean:
-                    return (int)Math.Sqrt(Math.Pow(a.x - b.x, 2) + Math.Pow(a.y - b.y, 2));// 欧式
+                    return (int)Math.Sqrt(Math.Pow(aX - bX, 2) + Math.Pow(aY - bY, 2));// 欧式
                 case HeuristicTypes.SquaredEuclidean:
-                    return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);// 欧式平方
+                    return (aX - bX) * (aX - bX) + (aY - bY) * (aY - bY);// 欧式平方
                 case HeuristicTypes.Diagonal:
-                    return Math.Max(Math.Abs(a.x - b.x), Math.Abs(a.y - b.y));
+                    return Math.Max(Math.Abs(aX - bX), Math.Abs(aY - bY));
                 case HeuristicTypes.WeightedDiagonal:
-                    int deltaX = Math.Abs(a.x - b.x);
-                    int deltaY = Math.Abs(a.y - b.y);
+                    int deltaX = Math.Abs(aX - bX);
+                    int deltaY = Math.Abs(aY - bY);
                     return DiagonalCost * Math.Min(deltaX, deltaY) + StraightCost * Math.Abs(deltaX - deltaY);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(types), types, null);

@@ -37,7 +37,7 @@ namespace PathFinding {
             AStartPoint startPoint = _aStartMap[start.x, start.y];
             AStartPoint targetPoint = _aStartMap[target.x, target.y];
 
-            startPoint.SetData(0, HeuristicFunction.CalculateHeuristic(start, target), null); // 设置起点数据
+            startPoint.SetData(0, HeuristicFunction.CalculateHeuristic(start.x, start.y, target.x, target.y), null); // 设置起点数据
             _openList.Add(startPoint);
 
             while (_openList.Count > 0) {
@@ -51,15 +51,15 @@ namespace PathFinding {
 
                 // 遍历当前节点的相邻节点
                 foreach (var direction in SourceMap.Direction2VectorDict.Values) {
-                    Vector2Int neighborPosition = new Vector2Int(current.X + direction.x, current.Y + direction.y);
+                    Vector2Int nP = new Vector2Int(current.X + direction.x, current.Y + direction.y);
                     
-                    if (!_map.IsPassable(neighborPosition.x, neighborPosition.y) ||
+                    if (!_map.IsPassable(nP.x, nP.y) ||
                         (direction.x != 0 && direction.y != 0 && // 对角线障碍判断
-                         (!_map.IsPassable(neighborPosition.x, current.Y) || 
-                          !_map.IsPassable(current.X, neighborPosition.y)))) 
+                         (!_map.IsPassable(nP.x, current.Y) || 
+                          !_map.IsPassable(current.X, nP.y)))) 
                         continue;
                     
-                    AStartPoint neighbor = _aStartMap[neighborPosition.x, neighborPosition.y];
+                    AStartPoint neighbor = _aStartMap[nP.x, nP.y];
 
                     // 如果相邻节点已经在封闭列表中，跳过
                     if (_closedList.Contains(neighbor)) continue;
@@ -67,7 +67,7 @@ namespace PathFinding {
                     // 计算G值、H值和F值
                     int tentativeG = current.G + 1;
                     if (!_openList.Contains(neighbor)) {
-                        neighbor.SetData(tentativeG, HeuristicFunction.CalculateHeuristic(neighborPosition, target), current);
+                        neighbor.SetData(tentativeG, HeuristicFunction.CalculateHeuristic(nP.x, nP.y, target.x, target.y), current);
                         _openList.Add(neighbor);
                     }else if (tentativeG < neighbor.G) {
                         _openList.Remove(neighbor);
