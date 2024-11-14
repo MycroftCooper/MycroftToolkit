@@ -70,7 +70,17 @@ namespace PathFinding {
                 if (!IsPassable(x0, y0)) return false;
 
                 // 检查对角线穿越障碍的情况
-                if(dx != 0 && dy != 0 && !CanMoveTo(x0, y0, new Vector2Int(dx, dy)))return false;
+                if (dx != 0 && dy != 0) { // 如果沿对角线移动
+                    if (CanDiagonallyPassByObstacle) {
+                        if (!IsPassable(x0 - sx, y0, false) && !IsPassable(x0, y0 - sy, false)) {
+                            return false;
+                        }
+                    } else {
+                        if (!IsPassable(x0 - sx, y0, false) || !IsPassable(x0, y0 - sy, false)) {
+                            return false;
+                        }
+                    }
+                }
 
                 // 如果到达目标节点，返回 true
                 if (x0 == x1 && y0 == y1) return true;
