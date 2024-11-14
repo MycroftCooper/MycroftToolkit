@@ -76,6 +76,5 @@ namespace PathFinding {
                 (array[i], array[j]) = (array[j], array[i]);
             }
         }
-
     }
 }

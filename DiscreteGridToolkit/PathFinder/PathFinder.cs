@@ -9,6 +9,7 @@ using Debug = UnityEngine.Debug;
 namespace PathFinding {
     public class PathFinder : MonoBehaviour {
         public bool canDiagonallyPassByObstacle;
+        public bool useLineOfSightFirstCheck;
         private SourceMap _map;
         private readonly Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> _algorithms = new ();
         private readonly Dictionary<PathReprocesses, IPathReprocess> _reprocesses = new ();
@@ -44,9 +45,8 @@ namespace PathFinding {
         private Queue<PathFindingRequest> _requestQueue = new();
         private Queue<PathFindingRequest> _pathCache;
         public void FindPath(PathFindingRequest request) {
-            if (!IsRequestValid(request)) {
-                return;
-            }
+            if (!IsRequestValid(request)) return;
+            if (useLineOfSightFirstCheck && FirstCheck(request)) return;
 
             if (!request.NeedHandleImmediately) {
                 _requestQueue.Enqueue(request);
@@ -83,6 +83,15 @@ namespace PathFinding {
                 return false;
             }
             return true;
+        }
+
+        private bool FirstCheck(PathFindingRequest request) {
+            if (useLineOfSightFirstCheck && _map.LineOfSight(request.StartPos, request.EndPos)) {
+                request.ResultPath = new List<Vector2Int>{request.EndPos};
+                request.ReprocessedPath = new List<Vector2Int>(request.ResultPath);
+                return true;
+            }
+            return false;
         }
 
         private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, string heuristicFunction) {
@@ -167,14 +176,13 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            debugAlgorithm = PathFinderAlgorithms.JPS;
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
                 debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);
             _debugRequest = request;
             _stopwatch.Stop();
-            Debug.Log($"Pathfinder> DebugRequest completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.\n\n" +
-                      $"{_debugRequest}\n\n{_map}");
+            Debug.Log($"Pathfinder> DebugRequest completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.\n" +
+                      $"{_debugRequest}\n{_map}");
         }
         
         void OnDrawGizmos() {
@@ -224,6 +232,18 @@ namespace PathFinding {
                 Debug.DrawLine(startPos, endPos, Color.blue);
             }
         }
+        
+        [Button]
+        public List<Vector2Int> TestTheta(List<Vector2Int> target) {
+            Theta t = new Theta();
+            return t.ReprocessPath(target, _map);
+        }
+
+        [Button]
+        public bool TestLineOf(Vector2Int p1, Vector2Int p2) {
+            return _map.LineOfSight(p1, p2);
+        }
+
         #endregion
     }
 }

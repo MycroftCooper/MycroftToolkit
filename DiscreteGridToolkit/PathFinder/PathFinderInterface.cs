@@ -26,7 +26,7 @@ namespace PathFinding {
         }
     }
     
-    public enum PathReprocesses {None, Default  }
+    public enum PathReprocesses {None, Default, Theta  }
     public interface IPathReprocess {
         public List<Vector2Int> ReprocessPath(List<Vector2Int> path, SourceMap map);
         public PathReprocesses PathReprocess { get; }

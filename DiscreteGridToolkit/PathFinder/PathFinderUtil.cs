@@ -53,11 +53,11 @@ namespace PathFinding {
         }
         
         // Theta算法
-        public bool LineOfSight(JPSPlusPoint parentJpsPlusPoint, JPSPlusPoint currentJpsPlusPoint) {
-            int x0 = parentJpsPlusPoint.X;
-            int y0 = parentJpsPlusPoint.Y;
-            int x1 = currentJpsPlusPoint.X;
-            int y1 = currentJpsPlusPoint.Y;
+        public bool LineOfSight(Vector2Int start, Vector2Int end) {
+            int x0 = start.x;
+            int y0 = start.y;
+            int x1 = end.x;
+            int y1 = end.y;
 
             int dx = Mathf.Abs(x1 - x0);
             int dy = Mathf.Abs(y1 - y0);
@@ -70,12 +70,7 @@ namespace PathFinding {
                 if (!IsPassable(x0, y0)) return false;
 
                 // 检查对角线穿越障碍的情况
-                if (dx != 0 && dy != 0) { // 如果沿对角线移动
-                    if (!IsPassable(x0 - sx, y0, false) && !IsPassable(x0, y0 - sy, false)) {
-                        // 如果水平和垂直方向都被阻挡，则阻止对角线穿越
-                        return false;
-                    }
-                }
+                if(dx != 0 && dy != 0 && !CanMoveTo(x0, y0, new Vector2Int(dx, dy)))return false;
 
                 // 如果到达目标节点，返回 true
                 if (x0 == x1 && y0 == y1) return true;
@@ -93,7 +88,7 @@ namespace PathFinding {
         }
         
         public override string ToString() {
-            return "SourceMap> Width: {Width},Height: {Height},\tCanDiagonallyPassByObstacle: {CanDiagonallyPassByObstacle}";
+            return $"SourceMap> Width: {Width},Height: {Height},\tCanDiagonallyPassByObstacle: {CanDiagonallyPassByObstacle}";
         }
         
         public enum Directions { Up, Down, Left, Right, LeftUp, RightUp, LeftDown, RightDown, Length }
@@ -117,6 +112,8 @@ namespace PathFinding {
             { new Vector2Int(-1, -1), Directions.LeftDown },
             { new Vector2Int(1, -1), Directions.RightDown }
         };
+
+        public static bool IsNeighbor(Vector2Int a, Vector2Int b) => Vector2DirectionDict.Keys.Any(dir => b == a + dir);
     }
 
     public static class HeuristicFunctions {
