@@ -43,13 +43,7 @@ namespace PathFinding {
         private Queue<PathFindingRequest> _requestQueue = new();
         private Queue<PathFindingRequest> _pathCache;
         public void FindPath(PathFindingRequest request) {
-            if (request == null) {
-                Debug.LogError("PathFinder: request is null");
-                return;
-            }
-            if (!_map.IsPassable(request.StartPos.x, request.StartPos.y) || 
-                !_map.IsPassable(request.EndPos.x, request.EndPos.y)) {
-                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is not passable or out of range");
+            if (!IsRequestValid(request)) {
                 return;
             }
 
@@ -66,6 +60,28 @@ namespace PathFinding {
                 var p = GetReprocess(request.Reprocess);
                 request.ReprocessedPath = p != null ? p.ReprocessPath(request.ResultPath, _map) : request.ResultPath;
             }
+        }
+
+        private bool IsRequestValid(PathFindingRequest request) {
+            if (request == null) {
+                Debug.LogError("PathFinder: request is null");
+                return false;
+            }
+            if (request.StartPos == request.EndPos) {
+                Debug.LogError($"PathFinder: StartPos cant equal EndPos{request.EndPos.x}");
+                return false;
+            }
+            if (!_map.IsInBounds(request.StartPos.x, request.StartPos.y) ||
+                !_map.IsInBounds(request.EndPos.x, request.EndPos.y)) {
+                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is out of range");
+                return false;
+            }
+            if (!_map.IsPassable(request.StartPos.x, request.StartPos.y, false) || 
+                !_map.IsPassable(request.EndPos.x, request.EndPos.y, false)) {
+                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is not passable");
+                return false;
+            }
+            return true;
         }
 
         private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, string heuristicFunction) {
@@ -150,7 +166,7 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            debugAlgorithm = PathFinderAlgorithms.Dijkstra;
+            debugAlgorithm = PathFinderAlgorithms.BFS;
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
                 debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);

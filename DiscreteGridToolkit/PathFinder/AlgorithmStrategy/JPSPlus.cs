@@ -19,7 +19,6 @@ namespace PathFinding {
                 }
             }
             PreprocessJumpPoints();
-            
         }
 
         public void UpdateMap(RectInt bounds, bool passable) {
@@ -35,87 +34,7 @@ namespace PathFinding {
         #region 跳点相关
 
         private void PreprocessJumpPoints() {
-            for (int x = 0; x < _map.Width; x++) {
-                for (int y = 0; y < _map.Height; y++) {
-                    if (!_map.IsPassable(x, y)) {
-                        continue;
-                    }
-
-                    for (int dir = 0; dir < (int)SourceMap.Directions.Length; dir++) {
-                        Vector2Int direction = SourceMap.Direction2VectorDict[(SourceMap.Directions)dir];
-                        Vector2Int currentJumpPoint = _pointsMap[x, y].JumpPoints[dir];
-
-                        // 如果当前跳点未计算过，或者发现了一个新的跳点
-                        if (currentJumpPoint == new Vector2Int(-1, -1)) {
-                            Vector2Int jumpPoint = FindJumpPoint(_pointsMap[x, y], direction);
-                            if (jumpPoint != new Vector2Int(-1, -1)) {
-                                _pointsMap[x, y].JumpPoints[dir] = jumpPoint;
-                            }
-                        }
-                    }
-                }
-            }
         }
-
-        private Vector2Int FindJumpPoint(JPSPlusPoint startPoint, Vector2Int direction) {
-            int x = startPoint.X;
-            int y = startPoint.Y;
-            int dx = direction.x;
-            int dy = direction.y;
-
-            while (true) {
-                x += dx;
-                y += dy;
-
-                if (!_map.IsPassable(x, y))
-                    return new Vector2Int(-1, -1); // 无效跳点
-
-                if (HasForcedNeighbor(_pointsMap[x, y], direction))
-                    return new Vector2Int(x, y); // 找到跳点
-
-                if (dx != 0 && dy != 0) {
-                    Vector2Int jumpPoint;
-                    if (_map.IsPassable(x + dx, y)) {
-                        jumpPoint = FindJumpPoint(_pointsMap[x + dx, y], direction);
-                        if (jumpPoint != new Vector2Int(-1, -1)) {
-                            return jumpPoint;
-                        }
-                    }
-
-                    if (_map.IsPassable(x, y + dy)) {
-                        jumpPoint = FindJumpPoint(_pointsMap[x, y + dy], direction);
-                        if (jumpPoint != new Vector2Int(-1, -1)) {
-                            return jumpPoint;
-                        }
-                    }
-                }
-            }
-        }
-
-        public bool HasForcedNeighbor(JPSPlusPoint point, Vector2Int direction) {
-            int x = point.X;
-            int y = point.Y;
-            int dx = direction.x;
-            int dy = direction.y;
-
-            // 对角线方向
-            if (dx != 0 && dy != 0) {
-                // 检查是否存在强迫邻居
-                if ((_map.IsPassable(x - dx, y + dy) && !_map.IsPassable(x - dx, y)) ||
-                    (_map.IsPassable(x + dx, y - dy) && !_map.IsPassable(x, y - dy)))
-                    return true;
-            }else if (dx != 0) { // 水平方向
-                if ((_map.IsPassable(x + dx, y + 1) && !_map.IsPassable(x, y + 1)) ||
-                    (_map.IsPassable(x + dx, y - 1) && !_map.IsPassable(x, y - 1)))
-                    return true;
-            }else if (dy != 0) { // 垂直方向
-                if ((_map.IsPassable(x + 1, y + dy) && !_map.IsPassable(x + 1, y)) ||
-                    (_map.IsPassable(x - 1, y + dy) && !_map.IsPassable(x - 1, y)))
-                    return true;
-            }
-            return false;
-        }
-
         public void UpdateJumpPoints(Vector2Int point) {
 
         }

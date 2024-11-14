@@ -28,8 +28,6 @@ namespace PathFinding {
             _closedList = new HashSet<DijkstraPoint>();
         }
 
-        public void UpdateMap(RectInt bounds, bool passable) { }
-
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
             _openList.Clear();
             _closedList.Clear();
@@ -85,7 +83,8 @@ namespace PathFinding {
             }
             return path;
         }
-
+        
+        public void UpdateMap(RectInt bounds, bool passable) { }
         public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) { }
     }
 
