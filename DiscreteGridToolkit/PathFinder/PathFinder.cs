@@ -59,7 +59,7 @@ namespace PathFinding {
                 var resultPath = a.FindPath(request.StartPos, request.EndPos);
                 request.ResultPath = resultPath;
                 var p = GetReprocess(request.Reprocess);
-                request.ReprocessedPath = p != null ? p.ReprocessPath(request.ResultPath, _map) : request.ResultPath;
+                request.ReprocessedPath = p != null ? p.ReprocessPath(request.ResultPath, _map) : new List<Vector2Int>(request.ResultPath);
             }
         }
 
@@ -135,6 +135,7 @@ namespace PathFinding {
 
             p = reprocessType switch {
                 PathReprocesses.Default => new DefaultPathSmooth(),
+                PathReprocesses.Theta => new Theta(),
                 _ => throw new ArgumentOutOfRangeException(nameof(reprocessType), reprocessType, null)
             };
             _reprocesses.Add(reprocessType ,p);
@@ -220,12 +221,11 @@ namespace PathFinding {
             
             Gizmos.color = Color.blue;
             var p = path.StartPos.ToVec3() + oPos + new Vector3(0, 0, 0.2f);
-            Gizmos.DrawCube(p, new Vector3(1, 1, 0.1f));
+            Gizmos.DrawCube(p, new Vector3(0.9f, 0.9f, 0.1f));
             Gizmos.color = new Color(0f, 0f, 0.5f);
             p = path.EndPos.ToVec3() + oPos + new Vector3(0, 0, 0.2f);
-            Gizmos.DrawCube(p, new Vector3(1, 1, 0.1f));
+            Gizmos.DrawCube(p, new Vector3(0.9f, 0.9f, 0.1f));
             
-            Debug.DrawLine(path.StartPos.ToVec3() + oPos, path.ResultPath[0].ToVec3() + oPos, Color.blue);
             for (int i = 0; i < path.ReprocessedPath.Count - 1; i++) {
                 Vector3 startPos = oPos + new Vector3(path.ReprocessedPath[i].x, path.ReprocessedPath[i].y, 0.2f);
                 Vector3 endPos = oPos + new Vector3(path.ReprocessedPath[i + 1].x, path.ReprocessedPath[i + 1].y, 0.2f);

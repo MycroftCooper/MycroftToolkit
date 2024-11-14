@@ -234,9 +234,10 @@ namespace PathFinding {
         private List<Vector2Int> ReconstructPath(AStartPoint current) {
             List<Vector2Int> path = new List<Vector2Int>();
             while (current.P != null) {
-                path.Insert(0, new Vector2Int(current.X, current.Y));
+                path.Insert(0, current.Pos);
                 current = current.P;
             }
+            path.Insert(0, current.Pos);
             return path;
         }
 

@@ -75,10 +75,11 @@ namespace PathFinding {
         
         private List<Vector2Int> ReconstructPath(DijkstraPoint current) {
             List<Vector2Int> path = new List<Vector2Int>();
-            while (current != null) {
+            while (current.P != null) {
                 path.Insert(0, current.Pos);
                 current = current.P;
             }
+            path.Insert(0, current.Pos);
             return path;
         }
         

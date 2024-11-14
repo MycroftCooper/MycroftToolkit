@@ -8,8 +8,7 @@ namespace PathFinding {
         public List<Vector2Int> ReprocessPath(List<Vector2Int> path, SourceMap map) {
             List<Vector2Int> output = new List<Vector2Int>();
             if (path is not { Count: > 2 }) return path;
-
-            output.Add(path[0]); // 起点必定是关键点
+            
             int p = 0;
             int q = 1;
             while (q < path.Count) {
