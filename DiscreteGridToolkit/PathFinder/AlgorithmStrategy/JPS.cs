@@ -68,49 +68,50 @@ namespace PathFinding {
             return null;// 如果没有找到路径，返回空
         }
 
-        private AStartPoint FindJumpPoint(AStartPoint current, Vector2Int direction, AStartPoint target) {
-            int newX = current.X + direction.x;
-            int newY = current.Y + direction.y;
+        private AStartPoint FindJumpPoint(AStartPoint current, int dx, int dy, AStartPoint target) {
+            int newX = current.X + dx;
+            int newY = current.Y + dy;
             
-            // 检查是否可通行
             if (!_map.IsPassable(newX, newY)) {
                 return null;
             }
-            
+
+            bool isDirDiagonal = dx != 0 && dy != 0;
             // 对角线障碍判断
-            if (direction.x != 0 && direction.y != 0 && 
+            if (isDirDiagonal &&
                 (!_map.IsPassable(newX, current.Y) || !_map.IsPassable(current.X, newY))) {
-                // 如果对角线方向存在障碍物，先沿着水平方向和垂直方向前进一格
+                // 如果对角线方向存在障碍物，先沿着水平方向或垂直方向前进一格
                 if (_map.IsPassable(newX, current.Y)) {
                     return _aStartMap[newX, current.Y];
                 }
                 if (_map.IsPassable(current.X, newY)) {
                     return _aStartMap[current.X, newY];
                 }
-                return null;// 如果没有合适的跳点，返回null
+
+                return null; // 如果没有合适的跳点，返回null
             }
 
             AStartPoint newPoint = _aStartMap[newX, newY];
-            if (newPoint == target) {// 如果到达目标点，直接返回
-                return newPoint;
+            if (newPoint == target) {
+                return newPoint;// 如果到达目标点，直接返回
             }
 
             // 检查强迫邻居
-            if (direction.x == 0 || direction.y == 0) {
-                if (HasForcedNeighbors(newPoint, direction)) {
+            if (isDirDiagonal) {// 对角线移动需要处理两个方向的跳点
+                if (FindJumpPoint(newPoint, dx, 0, target) != null ||
+                    FindJumpPoint(newPoint, 0, dy, target) != null) {
                     return newPoint;
                 }
-            } else { // 对角线移动需要处理两个方向的跳点
-                if (FindJumpPoint(newPoint, new Vector2Int(direction.x, 0), target) != null ||
-                    FindJumpPoint(newPoint, new Vector2Int(0, direction.y), target) != null) {
+            } else {
+                if (HasForcedNeighbors(newPoint, dx, dy)) {
                     return newPoint;
                 }
             }
 
             // 继续递归
-            return FindJumpPoint(newPoint, direction, target);
+            return FindJumpPoint(newPoint, dx, dy, target);
         }
-        
+
         private readonly List<AStartPoint> successors = new List<AStartPoint>();
         private readonly List<Vector2Int> directions = new List<Vector2Int>();
          public void GetSuccessors(AStartPoint point, AStartPoint end) {
@@ -127,7 +128,7 @@ namespace PathFinding {
             }
 
             foreach (var dir in directions) {
-                AStartPoint jumpPoint = FindJumpPoint(point, dir, end);
+                AStartPoint jumpPoint = FindJumpPoint(point, dir.x, dir.y, end);
                 if (jumpPoint != null) {
                     successors.Add(jumpPoint);
                 }
@@ -206,22 +207,22 @@ namespace PathFinding {
                 directions.Add(new Vector2Int(-1, dy));
         }
         
-        private bool HasForcedNeighbors(AStartPoint point, Vector2Int direction) {
+        private bool HasForcedNeighbors(AStartPoint point, int dx, int dy) {
             int x = point.X;
             int y = point.Y;
 
             // 只检查与方向垂直的邻居
-            if (direction.x != 0 && direction.y != 0) {// 防止穿越阻挡，对角线不认为是强迫邻居
-                return (!_map.IsPassable(x - direction.x, y) && _map.IsPassable(x - direction.x, y + direction.y)) ||
-                       (!_map.IsPassable(x, y - direction.y) && _map.IsPassable(x + direction.x, y - direction.y));
+            if (dx != 0 && dy != 0) {// 防止穿越阻挡，对角线不认为是强迫邻居
+                return (!_map.IsPassable(x - dx, y) && _map.IsPassable(x - dx, y + dy)) ||
+                       (!_map.IsPassable(x, y - dy) && _map.IsPassable(x + dx, y - dy));
             }
-            if (direction.x != 0) { // 水平方向
-                return (!_map.IsPassable(x, y + 1) && _map.IsPassable(x + direction.x, y + 1)) ||
-                       (!_map.IsPassable(x, y - 1) && _map.IsPassable(x + direction.x, y - 1));
+            if (dx != 0) { // 水平方向
+                return (!_map.IsPassable(x, y + 1) && _map.IsPassable(x + dx, y + 1)) ||
+                       (!_map.IsPassable(x, y - 1) && _map.IsPassable(x + dx, y - 1));
             }
             // 垂直方向
-            return (!_map.IsPassable(x + 1, y) && _map.IsPassable(x + 1, y + direction.y)) ||
-                   (!_map.IsPassable(x - 1, y) && _map.IsPassable(x - 1, y + direction.y));
+            return (!_map.IsPassable(x + 1, y) && _map.IsPassable(x + 1, y + dy)) ||
+                   (!_map.IsPassable(x - 1, y) && _map.IsPassable(x - 1, y + dy));
         }
         
         private List<Vector2Int> ReconstructPath(AStartPoint current) {
