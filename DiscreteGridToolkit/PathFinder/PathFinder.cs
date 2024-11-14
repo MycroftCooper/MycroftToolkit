@@ -166,7 +166,7 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            debugAlgorithm = PathFinderAlgorithms.BFS;
+            debugAlgorithm = PathFinderAlgorithms.DFS;
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
                 debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,20 +6,54 @@ namespace PathFinding {
         public PathFinderAlgorithms Algorithm => PathFinderAlgorithms.DFS;
         public bool NeedBestSolution { get; set; }
         public HeuristicFunctionBase HeuristicFunction { get; set; }
+        private SourceMap _map;
         public void InitMap(SourceMap map) {
-            throw new System.NotImplementedException();
+            _map = map;
         }
-
-        public void UpdateMap(RectInt bounds, bool passable) {
-            throw new System.NotImplementedException();
-        }
-
+        
+        private readonly HashSet<Vector2Int> _visited = new HashSet<Vector2Int>();
+        private readonly Stack<(Vector2Int position, List<Vector2Int> path)> _stack = new Stack<(Vector2Int position, List<Vector2Int> path)>();
+        
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
-            throw new System.NotImplementedException();
-        }
+            _stack.Clear();
+            _visited.Clear();
+            
+            _stack.Push((start, new List<Vector2Int> { start }));
+            _visited.Add(start);
 
-        public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) {
-            throw new System.NotImplementedException();
+            // DFS 循环
+            while (_stack.Count > 0) {
+                var (currentPosition, currentPath) = _stack.Pop();
+
+                // 探索所有方向
+                foreach (var direction in SourceMap.Direction2VectorDict.Values) {
+                    Vector2Int neighbor = currentPosition + direction;
+
+                    if (!_map.IsPassable(neighbor.x, neighbor.y) ||
+                        (direction.x != 0 && direction.y != 0 && // 对角线障碍判断
+                         (!_map.IsPassable(neighbor.x, currentPosition.y) || 
+                          !_map.IsPassable(currentPosition.x, neighbor.y)))) 
+                        continue;
+                    
+                    // 如果邻居是目标点，直接返回路径
+                    if (neighbor == target) {
+                        currentPath.Add(neighbor);
+                        return currentPath;
+                    }
+
+                    // 如果邻居在地图内，并且是可通行的且未被访问过，加入栈
+                    if (_visited.Add(neighbor)) {
+                        var newPath = new List<Vector2Int>(currentPath) { neighbor };
+                        _stack.Push((neighbor, newPath));
+                    }
+                }
+            }
+
+            // 如果栈为空，说明没有找到路径
+            return null;
         }
+        
+        public void UpdateMap(RectInt bounds, bool passable) { }
+        public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) { }
     }
 }
