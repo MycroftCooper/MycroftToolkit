@@ -77,6 +77,9 @@ namespace PathFinding {
                 PathFinderAlgorithms.JPS => new JPS(),
                 PathFinderAlgorithms.JPSPlus => new JPSPlus(),
                 PathFinderAlgorithms.AStar => new AStart(),
+                PathFinderAlgorithms.Dijkstra => new Dijkstra(),
+                PathFinderAlgorithms.BFS => new BFS(),
+                PathFinderAlgorithms.DFS => new DFS(),
                 _ => throw new ArgumentOutOfRangeException(nameof(algorithmType), algorithmType, null)
             };
             
@@ -147,6 +150,7 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
+            debugAlgorithm = PathFinderAlgorithms.Dijkstra;
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
                 debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);

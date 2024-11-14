@@ -27,8 +27,6 @@ namespace PathFinding {
             _closedList = new HashSet<AStartPoint>();
         }
 
-        public void UpdateMap(RectInt bounds, bool passable) { }
-
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int target) {
             _openList.Clear();
             _closedList.Clear();
@@ -51,7 +49,7 @@ namespace PathFinding {
 
                 // 遍历当前节点的相邻节点
                 foreach (var direction in SourceMap.Direction2VectorDict.Values) {
-                    Vector2Int nP = new Vector2Int(current.X + direction.x, current.Y + direction.y);
+                    Vector2Int nP = current.Pos + direction;
                     
                     if (!_map.IsPassable(nP.x, nP.y) ||
                         (direction.x != 0 && direction.y != 0 && // 对角线障碍判断
@@ -78,8 +76,6 @@ namespace PathFinding {
             }
             return null; // 如果没有找到路径，返回空
         }
-
-        public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) { }
         
         // 回溯路径
         private List<Vector2Int> ReconstructPath(AStartPoint current) {
@@ -90,6 +86,9 @@ namespace PathFinding {
             }
             return path;
         }
+        
+        public void UpdateMap(RectInt bounds, bool passable) { }
+        public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos) { }
     }
     
     public class AStartPoint : BucketPriorityQueue<AStartPoint>.IBucketPriorityQueueItem {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace PathFinding {
-    public enum PathFinderAlgorithms {AStar, JPS, JPSPlus}
+    public enum PathFinderAlgorithms {AStar, JPS, JPSPlus, BFS, DFS, Dijkstra}
 
     public interface IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm { get; }
