@@ -29,11 +29,9 @@ namespace PathFinding {
                 foreach (var direction in SourceMap.Direction2VectorDict.Values) {
                     Vector2Int neighbor = currentPosition + direction;
 
-                    if (!_map.IsPassable(neighbor.x, neighbor.y) ||
-                        (direction.x != 0 && direction.y != 0 && // 对角线障碍判断
-                         (!_map.IsPassable(neighbor.x, currentPosition.y) || 
-                          !_map.IsPassable(currentPosition.x, neighbor.y)))) 
+                    if (!_map.CanMoveTo(currentPosition.x, currentPosition.y, direction)) {
                         continue;
+                    }
                     
                     // 如果邻居是目标点，直接返回路径
                     if (neighbor == target) {

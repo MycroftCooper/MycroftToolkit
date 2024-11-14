@@ -7,14 +7,18 @@ using UnityEngine;
 namespace PathFinding {
     public class SourceMap {
         public readonly bool[,] PassableMap;
+        public bool CanDiagonallyPassByObstacle;
         public readonly int Width;
         public readonly int Height;
 
-        public SourceMap(bool[,] passableMap) {
+        public SourceMap(bool[,] passableMap, bool canDiagonallyPassByObstacle = false) {
             PassableMap = passableMap;
+            CanDiagonallyPassByObstacle = canDiagonallyPassByObstacle;
             Width = PassableMap.GetLength(0);
             Height = PassableMap.GetLength(1);
         }
+        
+        public bool IsInBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
         
         public bool IsPassable(int x, int y, bool checkEdge = true) {
             if (checkEdge) {
@@ -23,8 +27,21 @@ namespace PathFinding {
             return x < 0 || x >= Width || y < 0 || y >= Height || PassableMap[x, y];
         }
 
-        public bool IsInBounds(int x, int y) {
-            return x >= 0 && x < Width && y >= 0 && y < Height;
+        public bool CanMoveTo(int x, int y, Vector2Int dir) {
+            int npx = x + dir.x;
+            int npy = y + dir.y;
+            if(!IsPassable(npx, npy)) return false;
+            if (dir.x == 0 || dir.y == 0) {
+                return true;
+            }
+            
+            bool hPassable = IsPassable(npx, y);
+            bool vPassable = IsPassable(x, npy);
+            if(!hPassable && !vPassable) return false;
+            if (!CanDiagonallyPassByObstacle && (!hPassable || !vPassable)) {
+                return false;
+            }
+            return true;
         }
 
         public void UpdateMap(RectInt bounds, bool passable) {

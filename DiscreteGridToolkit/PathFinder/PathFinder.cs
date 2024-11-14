@@ -8,9 +8,10 @@ using Debug = UnityEngine.Debug;
 
 namespace PathFinding {
     public class PathFinder : MonoBehaviour {
+        public bool canDiagonallyPassByObstacle;
         private SourceMap _map;
-        public Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> Algorithms = new ();
-        public Dictionary<PathReprocesses, IPathReprocess> Reprocesses = new ();
+        private readonly Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> _algorithms = new ();
+        private readonly Dictionary<PathReprocesses, IPathReprocess> _reprocesses = new ();
         private readonly HeuristicFunctions.CommonHeuristicFunction _commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
         
         [Button]
@@ -18,9 +19,9 @@ namespace PathFinding {
             if (isDebug) {
                 map = TestMap;
             }
-            _map = new SourceMap(map);
-            if(Algorithms.Count != 0) {
-                foreach (var a in Algorithms.Values) {
+            _map = new SourceMap(map, canDiagonallyPassByObstacle);
+            if(_algorithms.Count != 0) {
+                foreach (var a in _algorithms.Values) {
                     a.InitMap(_map);
                 }
             }
@@ -33,8 +34,8 @@ namespace PathFinding {
                 return;
             }
             _map.UpdateMap(bounds, passable);
-            if(Algorithms.Count != 0) {
-                foreach (var a in Algorithms.Values) {
+            if(_algorithms.Count != 0) {
+                foreach (var a in _algorithms.Values) {
                     a.UpdateMap(bounds, passable);
                 }
             }
@@ -85,7 +86,7 @@ namespace PathFinding {
         }
 
         private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, string heuristicFunction) {
-            if (Algorithms.TryGetValue(algorithmType, out var a)) {
+            if (_algorithms.TryGetValue(algorithmType, out var a)) {
                 return a;
             }
             
@@ -111,7 +112,7 @@ namespace PathFinding {
             }
             
             a.InitMap(_map);
-            Algorithms.Add(algorithmType, a);
+            _algorithms.Add(algorithmType, a);
             return a;
         }
 
@@ -119,7 +120,7 @@ namespace PathFinding {
             if (reprocessType == PathReprocesses.None) {
                 return null;
             }
-            if (Reprocesses.TryGetValue(reprocessType, out var p)) {
+            if (_reprocesses.TryGetValue(reprocessType, out var p)) {
                 return p;
             }
 
@@ -127,7 +128,7 @@ namespace PathFinding {
                 PathReprocesses.Default => new DefaultPathSmooth(),
                 _ => throw new ArgumentOutOfRangeException(nameof(reprocessType), reprocessType, null)
             };
-            Reprocesses.Add(reprocessType ,p);
+            _reprocesses.Add(reprocessType ,p);
             return p;
         }
 
@@ -166,7 +167,7 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            debugAlgorithm = PathFinderAlgorithms.DFS;
+            debugAlgorithm = PathFinderAlgorithms.JPS;
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
                 debugHeuristic.ToString(), debugPathReprocesses, false, true);
             FindPath(request);

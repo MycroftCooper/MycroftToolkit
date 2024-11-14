@@ -50,12 +50,9 @@ namespace PathFinding {
                 // 遍历当前节点的相邻节点
                 foreach (var direction in SourceMap.Direction2VectorDict.Values) {
                     Vector2Int nP = current.Pos + direction;
-                    
-                    if (!_map.IsPassable(nP.x, nP.y) ||
-                        (direction.x != 0 && direction.y != 0 && // 对角线障碍判断
-                         (!_map.IsPassable(nP.x, current.Y) || 
-                          !_map.IsPassable(current.X, nP.y)))) 
+                    if (!_map.CanMoveTo(current.X, current.Y, direction)) {
                         continue;
+                    }
                     
                     AStartPoint neighbor = _aStartMap[nP.x, nP.y];
 
