@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace PathFinding {
-    public class PathFindingRequest {
+    public class PathFindingRequest : IComparable<PathFindingRequest> {
+        public readonly int Priority;
         public readonly Vector2Int StartPos;
         public readonly Vector2Int EndPos;
 
@@ -30,7 +31,7 @@ namespace PathFinding {
         public readonly Action<PathFindingRequest> PathFoundHandler;
 
         public PathFindingRequest(Vector2Int startPos, Vector2Int endPos, 
-            PathFinderAlgorithms algorithm, bool needBestSolution, string heuristicType, PathReprocesses reprocess, 
+            PathFinderAlgorithms algorithm, bool needBestSolution, string heuristicType, PathReprocesses reprocess, int priority = 0,
             bool canUseCache = false, bool needHandleImmediately = false, Action<PathFindingRequest> pathFoundHandler = null) {
             StartPos = startPos;
             EndPos = endPos;
@@ -38,14 +39,28 @@ namespace PathFinding {
             NeedBestSolution = needBestSolution;
             HeuristicType = heuristicType;
             Reprocess = reprocess;
+            Priority = priority;
             CanUseCache = canUseCache;
             NeedHandleImmediately = needHandleImmediately;
             PathFoundHandler = pathFoundHandler;
         }
         
+        public int CompareTo(PathFindingRequest other) {
+            return other == null ? 1 : Priority.CompareTo(other.Priority); // 升序，小值排前
+        }
+        
+        public override bool Equals(object obj) {
+            return obj is PathFindingRequest other && 
+                   Priority == other.Priority && 
+                   StartPos.Equals(other.StartPos) && 
+                   EndPos.Equals(other.EndPos);
+        }
+
+        public override int GetHashCode() => HashCode.Combine(Priority, StartPos, EndPos);
+        
         public override string ToString() {
             return "PathFindingRequest {{\n" +
-                   $"  StartPos: {StartPos},\tEndPos: {EndPos},\n" +
+                   $"  Priority: {Priority},\tStartPos: {StartPos},\tEndPos: {EndPos},\n" +
                    $"  NeedBestSolution: {NeedBestSolution},\tAlgorithm: {Algorithm},\tHeuristicType: {HeuristicType},\n" +
                    $"  Reprocess: {Reprocess},\n" +
                    $"  NeedHandleImmediately: {NeedHandleImmediately},\tCanUseCache: {CanUseCache},\n" +

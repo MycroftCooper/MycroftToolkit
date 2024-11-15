@@ -1,5 +1,6 @@
 using Sirenix.OdinInspector;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using MycroftToolkit.DiscreteGridToolkit;
@@ -8,12 +9,9 @@ using Debug = UnityEngine.Debug;
 
 namespace PathFinding {
     public class PathFinder : MonoBehaviour {
+        #region 地图处理相关
         public bool canDiagonallyPassByObstacle;
-        public bool useLineOfSightFirstCheck;
         private SourceMap _map;
-        private readonly Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> _algorithms = new ();
-        private readonly Dictionary<PathReprocesses, IPathReprocess> _reprocesses = new ();
-        private readonly HeuristicFunctions.CommonHeuristicFunction _commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
         
         [Button]
         public void SetPassableMap(bool[,] map) {
@@ -41,57 +39,19 @@ namespace PathFinding {
                 }
             }
         }
+        #endregion
+
+        #region 算法相关
+        public bool useLineOfSightFirstCheck;
+        private readonly Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> _algorithms = new ();
+        private readonly Dictionary<PathReprocesses, IPathReprocess> _reprocesses = new ();
+        private readonly HeuristicFunctions.CommonHeuristicFunction _commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
         
-        private Queue<PathFindingRequest> _requestQueue = new();
-        private Queue<PathFindingRequest> _pathCache;
-        public void FindPath(PathFindingRequest request) {
-            if (!IsRequestValid(request)) return;
-            if (useLineOfSightFirstCheck && FirstCheck(request)) return;
-
-            if (!request.NeedHandleImmediately) {
-                _requestQueue.Enqueue(request);
-                return;
-            }
-
-            if (!request.CanUseCache) {
-                var a = GetAlgorithm(request.Algorithm, request.HeuristicType);
-                a.NeedBestSolution = request.NeedBestSolution;
-                var resultPath = a.FindPath(request.StartPos, request.EndPos);
-                request.ResultPath = resultPath;
-                var p = GetReprocess(request.Reprocess);
-                request.ReprocessedPath = p != null ? p.ReprocessPath(request.ResultPath, _map) : new List<Vector2Int>(request.ResultPath);
-            }
-        }
-
-        private bool IsRequestValid(PathFindingRequest request) {
-            if (request == null) {
-                Debug.LogError("PathFinder: request is null");
-                return false;
-            }
-            if (request.StartPos == request.EndPos) {
-                Debug.LogError($"PathFinder: StartPos cant equal EndPos{request.EndPos.x}");
-                return false;
-            }
-            if (!_map.IsInBounds(request.StartPos.x, request.StartPos.y) ||
-                !_map.IsInBounds(request.EndPos.x, request.EndPos.y)) {
-                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is out of range");
-                return false;
-            }
-            if (!_map.IsPassable(request.StartPos.x, request.StartPos.y, false) || 
-                !_map.IsPassable(request.EndPos.x, request.EndPos.y, false)) {
-                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is not passable");
-                return false;
-            }
-            return true;
-        }
-
         private bool FirstCheck(PathFindingRequest request) {
-            if (useLineOfSightFirstCheck && _map.IsLineOfSight(request.StartPos, request.EndPos)) {
-                request.ResultPath = new List<Vector2Int>{request.EndPos};
-                request.ReprocessedPath = new List<Vector2Int>(request.ResultPath);
-                return true;
-            }
-            return false;
+            if (!useLineOfSightFirstCheck || !_map.IsLineOfSight(request.StartPos, request.EndPos)) return false;
+            request.ResultPath = new List<Vector2Int>{request.EndPos};
+            request.ReprocessedPath = new List<Vector2Int>(request.ResultPath);
+            return true;
         }
 
         private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, string heuristicFunction) {
@@ -141,6 +101,92 @@ namespace PathFinding {
             _reprocesses.Add(reprocessType ,p);
             return p;
         }
+        #endregion
+        
+        private Queue<PathFindingRequest> _pathCache;
+        public void FindPath(PathFindingRequest request) {
+            if (!IsRequestValid(request)) return;
+            if (useLineOfSightFirstCheck && FirstCheck(request)) return;
+
+            if (request.NeedHandleImmediately) {
+                ExecuteRequest(request);
+                return;
+            }
+
+            _requestQueue.Add(request);
+        }
+
+        private void ExecuteRequest(PathFindingRequest request) {
+            if (request.CanUseCache) {
+            }
+            else {
+                var a = GetAlgorithm(request.Algorithm, request.HeuristicType);
+                a.NeedBestSolution = request.NeedBestSolution;
+                var resultPath = a.FindPath(request.StartPos, request.EndPos);
+                request.ResultPath = resultPath;
+                var p = GetReprocess(request.Reprocess);
+                request.ReprocessedPath = p != null ? p.ReprocessPath(request.ResultPath, _map) : new List<Vector2Int>(request.ResultPath);
+            }
+        }
+
+        private bool IsRequestValid(PathFindingRequest request) {
+            if (request == null) {
+                Debug.LogError("PathFinder: request is null");
+                return false;
+            }
+            if (request.StartPos == request.EndPos) {
+                Debug.LogError($"PathFinder: StartPos cant equal EndPos{request.EndPos.x}");
+                return false;
+            }
+            if (!_map.IsInBounds(request.StartPos.x, request.StartPos.y) ||
+                !_map.IsInBounds(request.EndPos.x, request.EndPos.y)) {
+                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is out of range");
+                return false;
+            }
+            if (!_map.IsPassable(request.StartPos.x, request.StartPos.y, false) || 
+                !_map.IsPassable(request.EndPos.x, request.EndPos.y, false)) {
+                Debug.LogError($"PathFinder: StartPos{request.StartPos} or EndPos{request.EndPos.x} is not passable");
+                return false;
+            }
+            return true;
+        }
+
+        #region 分帧处理相关
+        private SortedSet<PathFindingRequest> _requestQueue = new();
+
+        private void Update() {
+            throw new NotImplementedException();
+        }
+
+        public void CancelRequest(PathFindingRequest request) {
+            if (!_requestQueue.Contains(request)) {
+                Debug.LogError($"PathFinder: Request {request} not found in queue!");
+                return;
+            }
+            _requestQueue.Remove(request);
+        }
+
+        private float _frameRate;
+        private float _miniFrameRate = 20;
+        private float _adjustFrameRate = 30;
+        private int _requestsPerFrame = 0;
+        private Vector2Int _requestsPerFrameRange = new Vector2Int(1, 10);
+        
+        private IEnumerator HandleRequests() {
+            int processedRequests = 0;
+
+            // 处理请求队列
+            while (_requestQueue.Count > 0 && processedRequests < requestsPerFrame) {
+                var request = _requestQueue.Min;
+                _requestQueue.Remove(request);
+                ExecuteRequest(request);
+                processedRequests++;
+                
+            }
+            yield return null; // 等待下一帧继续
+        }
+
+        #endregion
 
         #region Debug相关
         public bool isDebug;
@@ -178,24 +224,28 @@ namespace PathFinding {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
             PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
-                debugHeuristic.ToString(), debugPathReprocesses, false, true);
+                debugHeuristic.ToString(), debugPathReprocesses, 0,false, true);
             FindPath(request);
             _debugRequest = request;
             _stopwatch.Stop();
             Debug.Log($"Pathfinder> DebugRequest completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.\n" +
                       $"{_debugRequest}\n{_map}");
         }
-        
-        void OnDrawGizmos() {
-            if (!isDebug || _map == null) {
-                return;
-            }
 
+        void OnDrawGizmos() {
+            if (!isDebug) return;
+            DrawMap();
+            if (_debugRequest == null) return;
+            DrawPath(_debugRequest.ResultPath, Color.blue, Vector3.zero);
+            DrawPath(_debugRequest.ReprocessedPath, Color.green, new Vector3(0.1f, 0f, 0.1f));
+        }
+
+        private void DrawMap() {
+            if(_map == null) return;
             IPathFinderAlgorithm a = null;
             if (_debugRequest != null) {
                 a = GetAlgorithm(_debugRequest.Algorithm, _debugRequest.HeuristicType);
             }
-
             Gizmos.color = Color.gray;
             Vector3 oPos = transform.position + new Vector3(0.5f, 0.5f);
             // 遍历 passableMap 并绘制格子
@@ -209,41 +259,26 @@ namespace PathFinding {
                     a?.OnDebugDrawGizmos(oPos, new Vector2Int(x, y));
                 }
             }
-
-            DrawPath(_debugRequest);
         }
         
-        private void DrawPath(PathFindingRequest path) {
-            if (path?.ReprocessedPath == null || path.ReprocessedPath.Count == 0) {
+        private void DrawPath(List<Vector2Int> path, Color color, Vector3 offset) {
+            if (path == null || path.Count == 0) {
                 return;
             }
             Vector3 oPos = transform.position + new Vector3(0.5f, 0.5f);
             
-            Gizmos.color = Color.blue;
-            var p = path.StartPos.ToVec3() + oPos + new Vector3(0, 0, 0.2f);
+            Gizmos.color = color;
+            var p = path[0].ToVec3() + oPos + new Vector3(0, 0, 0.2f);
             Gizmos.DrawCube(p, new Vector3(0.9f, 0.9f, 0.1f));
-            Gizmos.color = new Color(0f, 0f, 0.5f);
-            p = path.EndPos.ToVec3() + oPos + new Vector3(0, 0, 0.2f);
+            p = path[^1].ToVec3() + oPos + new Vector3(0, 0, 0.2f);
             Gizmos.DrawCube(p, new Vector3(0.9f, 0.9f, 0.1f));
             
-            for (int i = 0; i < path.ReprocessedPath.Count - 1; i++) {
-                Vector3 startPos = oPos + new Vector3(path.ReprocessedPath[i].x, path.ReprocessedPath[i].y, 0.2f);
-                Vector3 endPos = oPos + new Vector3(path.ReprocessedPath[i + 1].x, path.ReprocessedPath[i + 1].y, 0.2f);
-                Debug.DrawLine(startPos, endPos, Color.blue);
+            for (int i = 0; i < path.Count - 1; i++) {
+                Vector3 startPos = oPos + new Vector3(path[i].x, path[i].y, 0.2f);
+                Vector3 endPos = oPos + new Vector3(path[i + 1].x, path[i + 1].y, 0.2f);
+                Debug.DrawLine(startPos + offset, endPos + offset, color);
             }
         }
-        
-        [Button]
-        public List<Vector2Int> TestTheta(List<Vector2Int> target) {
-            Theta t = new Theta();
-            return t.ReprocessPath(target, _map);
-        }
-
-        [Button]
-        public bool TestLineOf(Vector2Int p1, Vector2Int p2) {
-            return _map.IsLineOfSight(p1, p2);
-        }
-
         #endregion
     }
 }
