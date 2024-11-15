@@ -27,11 +27,12 @@ namespace PathFinding {
             return x < 0 || x >= Width || y < 0 || y >= Height || PassableMap[x, y];
         }
 
-        public bool CanMoveTo(int x, int y, Vector2Int dir) {
-            int npx = x + dir.x;
-            int npy = y + dir.y;
+        public bool CanMoveTo(int x, int y, Vector2Int dir) => CanMoveTo(x, y, dir.x, dir.y);
+        public bool CanMoveTo(int x, int y, int dx, int dy) {
+            int npx = x + dx;
+            int npy = y + dy;
             if(!IsPassable(npx, npy)) return false;
-            if (dir.x == 0 || dir.y == 0) {
+            if (dx == 0 || dy == 0) {
                 return true;
             }
             
@@ -52,8 +53,8 @@ namespace PathFinding {
             }
         }
         
-        // Theta算法
-        public bool LineOfSight(Vector2Int start, Vector2Int end) {
+        // Bresenham's Line Algorithm（布雷森汉姆线段算法）
+        public bool IsLineOfSight(Vector2Int start, Vector2Int end) {
             int x0 = start.x;
             int y0 = start.y;
             int x1 = end.x;
@@ -68,32 +69,22 @@ namespace PathFinding {
             while (true) {
                 // 如果当前格子不可通过，返回 false
                 if (!IsPassable(x0, y0)) return false;
-
-                // 检查对角线穿越障碍的情况
-                if (dx != 0 && dy != 0) { // 如果沿对角线移动
-                    if (CanDiagonallyPassByObstacle) {
-                        if (!IsPassable(x0 - sx, y0, false) && !IsPassable(x0, y0 - sy, false)) {
-                            return false;
-                        }
-                    } else {
-                        if (!IsPassable(x0 - sx, y0, false) || !IsPassable(x0, y0 - sy, false)) {
-                            return false;
-                        }
-                    }
-                }
-
                 // 如果到达目标节点，返回 true
                 if (x0 == x1 && y0 == y1) return true;
 
+                int cdx = 0, cdy = 0;
                 int e2 = 2 * err;
                 if (e2 > -dy) {
                     err -= dy;
-                    x0 += sx;
+                    cdx = sx;
                 }
                 if (e2 < dx) {
                     err += dx;
-                    y0 += sy;
+                    cdy = sy;
                 }
+                if (!CanMoveTo(x0, y0, cdx, cdy)) return false;
+                x0 += cdx;
+                y0 += cdy;
             }
         }
         

@@ -3,6 +3,13 @@ using UnityEngine;
 
 namespace PathFinding {
     public enum PathFinderAlgorithms {AStar, JPS, JPSPlus, BFS, DFS, Dijkstra}
+    /*
+        BFS	        O(m * n)	                    无权图，寻找最短路径或判断可达性。
+        DFS	        O(m * n)	                    搜索所有可能路径（非最短路径）或检查连通性。
+        A*	        O(b^d)（最好）/ O(m * n)（最坏）	启发式路径规划，依赖 h(n) 的质量，适合寻找最优路径。
+        JPS	        O(k * \log(k))	                优化的 A*，适合规则网格地图中快速找到最优路径。
+        Dijkstra	O(m * n * \log(m * n))	        加权图的最短路径，适合处理网格中不同权重的场景。
+     */
 
     public interface IPathFinderAlgorithm {
         public PathFinderAlgorithms Algorithm { get; }

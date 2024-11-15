@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace PathFinding {
     public class DefaultPathSmooth : IPathReprocess {
+        // 时间复杂度：O(n * d^2)
         public PathReprocesses PathReprocess => PathReprocesses.Default;
         private SourceMap _map;
         

@@ -86,7 +86,7 @@ namespace PathFinding {
         }
 
         private bool FirstCheck(PathFindingRequest request) {
-            if (useLineOfSightFirstCheck && _map.LineOfSight(request.StartPos, request.EndPos)) {
+            if (useLineOfSightFirstCheck && _map.IsLineOfSight(request.StartPos, request.EndPos)) {
                 request.ResultPath = new List<Vector2Int>{request.EndPos};
                 request.ReprocessedPath = new List<Vector2Int>(request.ResultPath);
                 return true;
@@ -241,7 +241,7 @@ namespace PathFinding {
 
         [Button]
         public bool TestLineOf(Vector2Int p1, Vector2Int p2) {
-            return _map.LineOfSight(p1, p2);
+            return _map.IsLineOfSight(p1, p2);
         }
 
         #endregion
