@@ -1,14 +1,14 @@
 using Sirenix.OdinInspector;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using MycroftToolkit.DiscreteGridToolkit;
+using MycroftToolkit.QuickCode.FrameTask;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace PathFinding {
-    public class PathFinder : MonoBehaviour {
+    public class PathFinder : FrameTaskScheduler<PathFindingFrameTask> {
         #region 地图处理相关
         public bool canDiagonallyPassByObstacle;
         private SourceMap _map;
@@ -45,7 +45,7 @@ namespace PathFinding {
         public bool useLineOfSightFirstCheck;
         private readonly Dictionary<PathFinderAlgorithms, IPathFinderAlgorithm> _algorithms = new ();
         private readonly Dictionary<PathReprocesses, IPathReprocess> _reprocesses = new ();
-        private readonly HeuristicFunctions.CommonHeuristicFunction _commonCommonHeuristicFunction = new(HeuristicTypes.Manhattan);
+        private readonly HeuristicFunctions.CommonHeuristicFunction _commonHeuristicFunction = new(HeuristicTypes.Manhattan);
         
         private bool FirstCheck(PathFindingRequest request) {
             if (!useLineOfSightFirstCheck || !_map.IsLineOfSight(request.StartPos, request.EndPos)) return false;
@@ -54,7 +54,7 @@ namespace PathFinding {
             return true;
         }
 
-        private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, string heuristicFunction) {
+        private IPathFinderAlgorithm GetAlgorithm(PathFinderAlgorithms algorithmType, HeuristicTypes heuristicFunction) {
             if (_algorithms.TryGetValue(algorithmType, out var a)) {
                 return a;
             }
@@ -69,15 +69,11 @@ namespace PathFinding {
                 _ => throw new ArgumentOutOfRangeException(nameof(algorithmType), algorithmType, null)
             };
             
-            if (string.IsNullOrEmpty(heuristicFunction)) {
+            if (heuristicFunction == HeuristicTypes.None) {
                 a.HeuristicFunction = null;
             } else {
-                if (Enum.TryParse<HeuristicTypes>(heuristicFunction, out var heuristic)) {
-                    _commonCommonHeuristicFunction.HeuristicType = heuristic;
-                    a.HeuristicFunction = _commonCommonHeuristicFunction;
-                } else {
-                    // 反射获取启发式函数
-                }
+                _commonHeuristicFunction.HeuristicType = heuristicFunction;
+                a.HeuristicFunction = _commonHeuristicFunction;
             }
             
             a.InitMap(_map);
@@ -104,19 +100,19 @@ namespace PathFinding {
         #endregion
         
         private Queue<PathFindingRequest> _pathCache;
-        public void FindPath(PathFindingRequest request) {
+        public void AddFindPathRequest(PathFindingRequest request, int priority = 1) {
             if (!IsRequestValid(request)) return;
             if (useLineOfSightFirstCheck && FirstCheck(request)) return;
-
-            if (request.NeedHandleImmediately) {
-                ExecuteRequest(request);
-                return;
-            }
-
-            _requestQueue.Add(request);
+            
+            float h = HeuristicFunctions.CalculateHeuristic(request.HeuristicType, request.StartPos, request.EndPos);
+            float mapMaxH = HeuristicFunctions.CalculateHeuristic(request.HeuristicType, Vector2Int.zero, _map.Size - Vector2Int.one);
+            float p = priority + h / mapMaxH;
+            
+            var newTask = new PathFindingFrameTask(this, request, p);
+            AddTask(newTask);
         }
 
-        private void ExecuteRequest(PathFindingRequest request) {
+        public void ExecuteRequest(PathFindingRequest request) {
             if (request.CanUseCache) {
             }
             else {
@@ -150,43 +146,6 @@ namespace PathFinding {
             }
             return true;
         }
-
-        #region 分帧处理相关
-        private SortedSet<PathFindingRequest> _requestQueue = new();
-
-        private void Update() {
-            throw new NotImplementedException();
-        }
-
-        public void CancelRequest(PathFindingRequest request) {
-            if (!_requestQueue.Contains(request)) {
-                Debug.LogError($"PathFinder: Request {request} not found in queue!");
-                return;
-            }
-            _requestQueue.Remove(request);
-        }
-
-        private float _frameRate;
-        private float _miniFrameRate = 20;
-        private float _adjustFrameRate = 30;
-        private int _requestsPerFrame = 0;
-        private Vector2Int _requestsPerFrameRange = new Vector2Int(1, 10);
-        
-        private IEnumerator HandleRequests() {
-            int processedRequests = 0;
-
-            // 处理请求队列
-            while (_requestQueue.Count > 0 && processedRequests < requestsPerFrame) {
-                var request = _requestQueue.Min;
-                _requestQueue.Remove(request);
-                ExecuteRequest(request);
-                processedRequests++;
-                
-            }
-            yield return null; // 等待下一帧继续
-        }
-
-        #endregion
 
         #region Debug相关
         public bool isDebug;
@@ -223,9 +182,9 @@ namespace PathFinding {
         private void DebugFindPath(Vector2Int start, Vector2Int end) {
             _stopwatch = new Stopwatch();
             _stopwatch.Start();
-            PathFindingRequest request = new PathFindingRequest(start, end, debugAlgorithm, debugNeedBestSolution, 
-                debugHeuristic.ToString(), debugPathReprocesses, 0,false, true);
-            FindPath(request);
+            PathFindingRequest request = new PathFindingRequest(start, end, 
+                debugAlgorithm, debugNeedBestSolution, debugHeuristic, debugPathReprocesses);
+            ExecuteRequest(request);
             _debugRequest = request;
             _stopwatch.Stop();
             Debug.Log($"Pathfinder> DebugRequest completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.\n" +

@@ -10,12 +10,14 @@ namespace PathFinding {
         public bool CanDiagonallyPassByObstacle;
         public readonly int Width;
         public readonly int Height;
+        public readonly Vector2Int Size;
 
         public SourceMap(bool[,] passableMap, bool canDiagonallyPassByObstacle = false) {
             PassableMap = passableMap;
             CanDiagonallyPassByObstacle = canDiagonallyPassByObstacle;
             Width = PassableMap.GetLength(0);
             Height = PassableMap.GetLength(1);
+            Size = new Vector2Int(Width, Height);
         }
         
         public bool IsInBounds(int x, int y) => x >= 0 && x < Width && y >= 0 && y < Height;
@@ -129,8 +131,12 @@ namespace PathFinding {
 
         public const int DiagonalCost = 2;
         public const int StraightCost = 1;
-        public static int CalculateHeuristic(HeuristicTypes types, int aX, int aY, int bX, int bY) {
-            switch (types) {
+
+        public static int CalculateHeuristic(HeuristicTypes type, Vector2Int a, Vector2Int b) =>
+            CalculateHeuristic(type, a.x, a.y, b.x, b.y);
+        
+        public static int CalculateHeuristic(HeuristicTypes type, int aX, int aY, int bX, int bY) {
+            switch (type) {
                 case HeuristicTypes.Manhattan:
                     return Mathf.Abs(aX - bX) + Mathf.Abs(aY - bY); // 曼哈顿距离
                 case HeuristicTypes.Euclidean:
@@ -144,7 +150,7 @@ namespace PathFinding {
                     int deltaY = Math.Abs(aY - bY);
                     return DiagonalCost * Math.Min(deltaX, deltaY) + StraightCost * Math.Abs(deltaX - deltaY);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(types), types, null);
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
     }

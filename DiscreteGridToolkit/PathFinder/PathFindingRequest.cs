@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
+using MycroftToolkit.QuickCode.FrameTask;
 using UnityEngine;
 
 namespace PathFinding {
-    public class PathFindingRequest : IComparable<PathFindingRequest> {
-        public readonly int Priority;
+    public class PathFindingRequest {
         public readonly Vector2Int StartPos;
         public readonly Vector2Int EndPos;
 
         public readonly bool NeedBestSolution;
         public readonly PathFinderAlgorithms Algorithm;
-        public readonly string HeuristicType;
+        public readonly HeuristicTypes HeuristicType;
         public readonly PathReprocesses Reprocess;
-
-        public readonly bool NeedHandleImmediately;
+        
         public readonly bool CanUseCache;
 
         public bool IsFound => ResultPath is { Count: > 0 };
@@ -31,42 +30,50 @@ namespace PathFinding {
         public readonly Action<PathFindingRequest> PathFoundHandler;
 
         public PathFindingRequest(Vector2Int startPos, Vector2Int endPos, 
-            PathFinderAlgorithms algorithm, bool needBestSolution, string heuristicType, PathReprocesses reprocess, int priority = 0,
-            bool canUseCache = false, bool needHandleImmediately = false, Action<PathFindingRequest> pathFoundHandler = null) {
+            PathFinderAlgorithms algorithm, bool needBestSolution, HeuristicTypes heuristicType, PathReprocesses reprocess,
+            bool canUseCache = false, Action<PathFindingRequest> pathFoundHandler = null) {
             StartPos = startPos;
             EndPos = endPos;
             Algorithm = algorithm;
             NeedBestSolution = needBestSolution;
             HeuristicType = heuristicType;
             Reprocess = reprocess;
-            Priority = priority;
             CanUseCache = canUseCache;
-            NeedHandleImmediately = needHandleImmediately;
             PathFoundHandler = pathFoundHandler;
-        }
-        
-        public int CompareTo(PathFindingRequest other) {
-            return other == null ? 1 : Priority.CompareTo(other.Priority); // 升序，小值排前
         }
         
         public override bool Equals(object obj) {
             return obj is PathFindingRequest other && 
-                   Priority == other.Priority && 
                    StartPos.Equals(other.StartPos) && 
                    EndPos.Equals(other.EndPos);
         }
 
-        public override int GetHashCode() => HashCode.Combine(Priority, StartPos, EndPos);
+        public override int GetHashCode() => HashCode.Combine(StartPos, EndPos);
         
         public override string ToString() {
             return "PathFindingRequest {{\n" +
-                   $"  Priority: {Priority},\tStartPos: {StartPos},\tEndPos: {EndPos},\n" +
+                   $"  StartPos: {StartPos},\tEndPos: {EndPos},\n" +
                    $"  NeedBestSolution: {NeedBestSolution},\tAlgorithm: {Algorithm},\tHeuristicType: {HeuristicType},\n" +
                    $"  Reprocess: {Reprocess},\n" +
-                   $"  NeedHandleImmediately: {NeedHandleImmediately},\tCanUseCache: {CanUseCache},\n" +
+                   $"  CanUseCache: {CanUseCache},\n" +
                    $"  ResultPathCount: {(ResultPath != null ? ResultPath.Count.ToString() : "null")}\t" +
                    $"ReprocessedPathCount: {(ReprocessedPath != null ? ReprocessedPath.Count.ToString() : "null")}\n" +
                    "}}";
+        }
+    }
+
+    public class PathFindingFrameTask : FrameTask {
+        public PathFinder Finder;
+        public PathFindingRequest Request;
+
+        public PathFindingFrameTask(PathFinder finder, PathFindingRequest request, float priority = 0) : base(priority,
+            _ => request.PathFoundHandler(request)) {
+            Finder = finder;
+            Request = request;
+        }
+
+        protected override void Execute() {
+            Finder.ExecuteRequest(Request);
         }
     }
 }

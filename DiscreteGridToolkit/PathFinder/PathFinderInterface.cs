@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace PathFinding {
-    public enum PathFinderAlgorithms {AStar, JPS, JPSPlus, BFS, DFS, Dijkstra}
+    public enum PathFinderAlgorithms {AStar, JPS, JPSPlus, BFS, DFS, Dijkstra, FlowField}
     /*
         BFS	        O(m * n)	                    无权图，寻找最短路径或判断可达性。
         DFS	        O(m * n)	                    搜索所有可能路径（非最短路径）或检查连通性。
@@ -21,15 +21,15 @@ namespace PathFinding {
         public void OnDebugDrawGizmos(Vector3 originPos, Vector2Int targetPos);
     }
 
-    public enum HeuristicTypes {Manhattan, Euclidean, SquaredEuclidean, Diagonal, WeightedDiagonal}
+    public enum HeuristicTypes {None, Manhattan, Euclidean, SquaredEuclidean, Diagonal, WeightedDiagonal}
 
     public abstract class HeuristicFunctionBase {
         public HeuristicTypes HeuristicType { get; set; }
         public abstract int CalculateHeuristic(int aX, int aY, int bX, int bY);
         public int CalculateMaxFCost(Vector2Int mapSize) {
             int maxG = mapSize.x * mapSize.y;// 通用的 G 值最大计算：沿地图边界绕一圈的代价
-            int maxF = CalculateHeuristic(0, 0, mapSize.x - 1, mapSize.y -1);
-            return maxG + maxF;
+            int maxH = CalculateHeuristic(0, 0, mapSize.x - 1, mapSize.y -1);
+            return maxG + maxH;
         }
     }
     
