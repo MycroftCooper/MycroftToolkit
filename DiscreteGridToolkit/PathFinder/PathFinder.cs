@@ -223,11 +223,11 @@ namespace PathFinding {
             for (int x = 0; x < _map.Width; x++) {
                 for (int y = 0; y < _map.Height; y++) {
                     Vector3 position = oPos + new Vector3(x, y, 0); // 将网格位置映射到世界空间
-                    Gizmos.color = _map.PassableMap[x, y] ? Color.gray : Color.red;
+                    a?.OnDebugDrawGizmos(oPos, new Vector2Int(x, y));
+                    Gizmos.color = _map.PassableMap[x, y] ? Color.clear : Color.red;
                     Gizmos.DrawCube(position, new Vector3(1, 1, 0.1f));
                     Gizmos.color = Color.black; // 边框颜色设置为黑色
                     Gizmos.DrawWireCube(position, Vector3.one);
-                    a?.OnDebugDrawGizmos(oPos, new Vector2Int(x, y));
                 }
             }
         }

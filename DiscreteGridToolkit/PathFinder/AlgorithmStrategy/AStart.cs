@@ -20,6 +20,7 @@ namespace PathFinding {
                     _aStartMap[x, y] = new AStartPoint(x, y);
                 }
             }
+            
             int maxF = HeuristicFunction.CalculateMaxFCost(new Vector2Int(_map.Width, _map.Height));
             int bucketCount = Mathf.CeilToInt(Mathf.Sqrt(_map.Width * _map.Height));
             int bucketSize = maxF / bucketCount;
