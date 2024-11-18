@@ -66,14 +66,14 @@ namespace PathFinding {
         public PathFinder Finder;
         public PathFindingRequest Request;
 
-        public PathFindingFrameTask(PathFinder finder, PathFindingRequest request, float priority = 0) : base(priority,
-            _ => request.PathFoundHandler(request)) {
+        public PathFindingFrameTask(PathFinder finder, PathFindingRequest request, float priority = 0) : base(priority) {
             Finder = finder;
             Request = request;
         }
 
         protected override void Execute() {
             Finder.ExecuteRequest(Request);
+            SetCompleted();
         }
     }
 }

@@ -3,12 +3,10 @@ using UnityEngine;
 
 namespace MycroftToolkit.QuickCode.FrameTask {
     public class FrameTaskScheduler<T> : MonoBehaviour where T : FrameTask {
+        #region 任务操作
         private readonly PriorityQueue<T> _requestQueue = new();
         public int TaskCount => _requestQueue.Count;
-        
-        protected bool ContainsTask(T t) {
-            return _requestQueue.Contains(t);
-        }
+        protected bool ContainsTask(T t) => _requestQueue.Contains(t);
 
         protected void AddTask(T t) {
             if (!_requestQueue.Enqueue(t)) {
@@ -55,15 +53,23 @@ namespace MycroftToolkit.QuickCode.FrameTask {
             _requestQueue.Clear();
         }
 
+        private void ExecuteQueueTask() {
+            var task = _requestQueue.Peek(); // 获取优先级最高的任务
+            task.ExecuteByScheduler(); // 执行任务
+            if (task.IsCompleted) {
+                _requestQueue.Remove(task); // 移除已完成的任务
+            }
+        }
+        #endregion
+
+        #region 任务调度
         public bool isPause;
         public bool IsExecutingInFrame { get; private set; }
         
-        public float miniFrameRate = 20f;
+        public int minExecuteInFrame = 1;
+        public float minFrameRate = 20f;
         private float _currentFrameRate;
         private float _currentTimeSlicing;
-        public bool needSmoothFrameRate;
-        public float smoothFactor = 0.3f; // 平滑系数，调整平滑效果的强度
-        private float _smoothedFrameRate; // 平滑后的帧率
         protected virtual void Update() {
             if (isPause || IsExecutingInFrame || _requestQueue.Count <= 0) return;
             CalculateTimeSlicing();
@@ -79,24 +85,29 @@ namespace MycroftToolkit.QuickCode.FrameTask {
         }
 
         private IEnumerator ExecuteTasksForCurrentFrame() {
+            if(_currentTimeSlicing == 0 && minExecuteInFrame <= 0)yield break;
+            
             IsExecutingInFrame = true;
+            
+            int taskCount = 0;
             float timeSpent = 0f;
-            while (_requestQueue.Count > 0 && timeSpent < _currentTimeSlicing) {
-                var task = _requestQueue.Peek(); // 获取优先级最高的任务
-                
+            
+            while (_requestQueue.Count > 0 && (timeSpent < _currentTimeSlicing || taskCount < minExecuteInFrame)) {
                 float startTime = Time.realtimeSinceStartup;
-                task.ExecuteByScheduler(); // 执行任务
-                if (task.IsCompleted) {
-                    _requestQueue.Remove(task); // 移除已完成的任务
-                }
+                ExecuteQueueTask(); // 执行任务
                 float endTime = Time.realtimeSinceStartup;
-                float taskTime = endTime - startTime; // 记录执行时间
-                timeSpent += taskTime;
                 
+                float taskTime = endTime - startTime;
+                timeSpent += taskTime;
+                taskCount++;
+
+                // 如果时间片已用尽，暂停一帧
                 if (timeSpent >= _currentTimeSlicing) {
                     yield return null; // 暂停一帧
-                    if(isPause)break;
-                    CalculateTimeSlicing();
+                    if (isPause) break; // 如果已暂停，退出
+                    CalculateTimeSlicing(); // 重新计算时间切片
+                    timeSpent = 0f; // 重置时间统计
+                    taskCount = 0; // 重置任务计数
                 }
             }
             IsExecutingInFrame = false;
@@ -104,23 +115,13 @@ namespace MycroftToolkit.QuickCode.FrameTask {
         
         private void CalculateTimeSlicing() {// 计算当前帧率和时间切片
             float currentFrameRate = 1f / Time.deltaTime;
-
-            if (needSmoothFrameRate) {
-                // 使用指数加权移动平均来平滑当前帧率
-                if (_smoothedFrameRate == 0f) {
-                    _smoothedFrameRate = currentFrameRate; // 如果是第一次计算，则直接使用当前帧率
-                } else {
-                    _smoothedFrameRate = smoothFactor * currentFrameRate + (1 - smoothFactor) * _smoothedFrameRate;
-                }
-                currentFrameRate = _smoothedFrameRate;
-            }
-            
-            float dFrameRate = Mathf.Max(0, currentFrameRate - miniFrameRate);
+            float dFrameRate = Mathf.Max(0, currentFrameRate - minFrameRate);
             if (dFrameRate == 0) {
                 _currentTimeSlicing = 0f;
             } else {
                 _currentTimeSlicing = 1f / dFrameRate;
             }
         }
+        #endregion
     }
 }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace PathFinding {
-    public enum PathFinderAlgorithms {AStar, JPS, JPSPlus, BFS, DFS, Dijkstra, FlowField}
+    public enum PathFinderAlgorithms {AStar, JPS, JPSPlus, BFS, DFS, Dijkstra}
     /*
         BFS	        O(m * n)	                    无权图，寻找最短路径或判断可达性。
         DFS	        O(m * n)	                    搜索所有可能路径（非最短路径）或检查连通性。

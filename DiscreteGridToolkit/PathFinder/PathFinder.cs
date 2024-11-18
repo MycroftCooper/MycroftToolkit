@@ -13,11 +13,7 @@ namespace PathFinding {
         public bool canDiagonallyPassByObstacle;
         private SourceMap _map;
         
-        [Button]
         public void SetPassableMap(bool[,] map) {
-            if (isDebug) {
-                map = TestMap;
-            }
             _map = new SourceMap(map, canDiagonallyPassByObstacle);
             if(_algorithms.Count != 0) {
                 foreach (var a in _algorithms.Values) {
@@ -25,8 +21,7 @@ namespace PathFinding {
                 }
             }
         }
-
-        [Button]
+        
         public void UpdatePassableMap(RectInt bounds, bool passable) {
             if (!_map.IsInBounds(bounds.min.x, bounds.min.y) || !_map.IsInBounds(bounds.max.x, bounds.max.y)) {
                 Debug.LogError($"Bounds{bounds} is not in Map bounds!");
@@ -114,6 +109,7 @@ namespace PathFinding {
 
         public void ExecuteRequest(PathFindingRequest request) {
             if (request.CanUseCache) {
+                // todo:使用缓存加速寻路
             }
             else {
                 var a = GetAlgorithm(request.Algorithm, request.HeuristicType);
@@ -170,12 +166,17 @@ namespace PathFinding {
         }
 
         [Button]
+        private void DebugUpdateTestMap() {
+            SetPassableMap(TestMap);
+        }
+
+        [Button]
         private void DebugGeneratorMaze(Vector2Int size, int seed) {
             size = new Vector2Int(101, 100);
             TestMap = new bool[size.x, size.y];
             _debugMazeGenerator = new MazeGenerator();
             TestMap = _debugMazeGenerator.GenerateMaze(size,seed, new Vector2Int(1,0), new Vector2Int(99,99));
-            SetPassableMap(null);
+            SetPassableMap(TestMap);
         }
 
         [Button]
@@ -189,6 +190,17 @@ namespace PathFinding {
             _stopwatch.Stop();
             Debug.Log($"Pathfinder> DebugRequest completed in {_stopwatch.Elapsed.TotalMilliseconds} ms.\n" +
                       $"{_debugRequest}\n{_map}");
+        }
+
+        [Button]
+        private void DebugSplitFrameTest(Vector2Int start, Vector2Int end, int times) {
+            for (int i = 0; i < times; i++) {
+                PathFindingRequest request = new PathFindingRequest(start, end, 
+                    debugAlgorithm, debugNeedBestSolution, debugHeuristic, debugPathReprocesses, false, 
+                    r=> Debug.Log($"Pathfinder> DebugRequest completed!\n{r}"));
+                AddFindPathRequest(request);
+            }
+            Debug.Log($"Pathfinder> All {times} DebugRequest completed!");
         }
 
         void OnDrawGizmos() {
