@@ -128,7 +128,7 @@ namespace PathFinding {
                     return step;// 遇到跳点
                 }
 
-                if (_map.CanDiagonallyPassByObstacle && dx != 0 && dy != 0) continue;
+                if (_map.CanDiagonallyPassByObstacle || (dx != 0 && dy != 0)) continue;
                 // 处理对角线穿透后的搜索
                 if (dy == 0) {
                     // 水平方向
@@ -173,6 +173,8 @@ namespace PathFinding {
             
             var startPoint = _pointsMap[start.x, start.y];
             var targetPoint = _pointsMap[target.x, target.y];
+            int tx = target.x;
+            int ty = target.y;
             
             startPoint.SetData(0, HeuristicFunction.CalculateHeuristic(start.x, start.y, target.x, target.y), null); // 设置起点数据
             _openList.Add(startPoint);
@@ -187,18 +189,21 @@ namespace PathFinding {
                 if (current == targetPoint) {
                     return ReconstructPath(targetPoint);
                 }
-
-                // 获取当前节点的继承节点（跳点）
+                
+                int cx = current.X;
+                int cy = current.Y;
+                
                 GetSuccessors(current, targetPoint);
                 foreach (var neighbor in _successors) {
                     if (_closedList.Contains(neighbor)) {
                         continue; // 没有跳点或跳点已在关闭列表
                     }
-                    int tentativeG = current.G + HeuristicFunction.CalculateHeuristic(current.Pos.x, current.Pos.y,neighbor.Pos.x, neighbor.Pos.y);
+                    int nx = neighbor.X;
+                    int ny = neighbor.Y;
+                    int tentativeG = current.G + HeuristicFunction.CalculateHeuristic(cx, cy,nx, ny);
                     if (!_openList.Contains(neighbor)) {
                         // 如果是新节点，加入 openList
-                        neighbor.SetData(tentativeG, HeuristicFunction.CalculateHeuristic(
-                            neighbor.X, neighbor.Y, target.x, target.y), current);
+                        neighbor.SetData(tentativeG, HeuristicFunction.CalculateHeuristic(nx, ny, tx, ty), current);
                         _openList.Add(neighbor);
                     } else if (tentativeG < neighbor.G) {
                         _openList.Remove(neighbor);
@@ -215,20 +220,29 @@ namespace PathFinding {
         private readonly List<JPSPlusPoint> _successors = new List<JPSPlusPoint>();
         private void GetSuccessors(JPSPlusPoint current, JPSPlusPoint target) {
             _successors.Clear();
-            Vector2Int targetDir = target.Pos - current.Pos;
-            Vector2Int pTargetDir = new Vector2Int(Math.Sign(targetDir.x), Math.Sign(targetDir.y));
+            Vector2Int targetV = target.Pos - current.Pos;
+            int targetDirX = Math.Sign(targetV.x);
+            int targetDirY = Math.Sign(targetV.y);
+            
+            Vector2Int parentDir = Vector2Int.zero;
+            if (current.P != null) {
+                int dx = current.X - current.P.X;
+                int dy = current.Y - current.P.Y;
+                parentDir = new Vector2Int(Math.Sign(dx), Math.Sign(dy));
+            } 
 
             for (int dirIndex = 0; dirIndex < 8; dirIndex++) {
                 Vector2Int dir = SourceMap.Direction2VectorDict[(SourceMap.Directions)dirIndex];
+                if(dir == -parentDir) continue;
+                
                 int step = current.JumpStep[dirIndex];
-
                 if (step == 0) continue; // 如果方向上没有可扩展步数，跳过
                 
                 Vector2Int tp;
-                if ((pTargetDir.x == 0 || dir.x == pTargetDir.x) &&
-                    (pTargetDir.y == 0 || dir.y == pTargetDir.y)) {
+                if ((targetDirX == 0 || dir.x == targetDirX) &&
+                    (targetDirY == 0 || dir.y == targetDirY)) {
                     int actualStep = dir.x != 0 && dir.y != 0 ? 
-                        Math.Min(step, Math.Min(targetDir.x, targetDir.y)) : Math.Min(step, targetDir.x + targetDir.y);
+                        Math.Min(step, Math.Min(targetV.x, targetV.y)) : Math.Min(step, targetV.x + targetV.y);
                     tp = current.Pos + dir * actualStep;
                     _successors.Add(_pointsMap[tp.x, tp.y]);
                     continue;
