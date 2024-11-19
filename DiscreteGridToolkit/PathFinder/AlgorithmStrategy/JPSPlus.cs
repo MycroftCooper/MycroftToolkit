@@ -121,26 +121,11 @@ namespace PathFinding {
                 if (!_map.IsPassable(x, y)) {// 障碍或越界
                     return step - 1;
                 }
-                if (!_map.CanMoveTo(x - dx, y - dy, dx, dy)) {
+                if (dx != 0 && dy != 0 && !_map.IsPassable(x - dx, y) && !_map.IsPassable(x, y - dy)) {
                     return step - 1;
                 }
-                if (HasForcedNeighbors(_pointsMap[x, y], dir.x, dir.y)) {
+                if (HasForcedNeighbors(_pointsMap[x, y], dx, dy)) {
                     return step;// 遇到跳点
-                }
-
-                if (_map.CanDiagonallyPassByObstacle || (dx != 0 && dy != 0)) continue;
-                // 处理对角线穿透后的搜索
-                if (dy == 0) {
-                    // 水平方向
-                    if ((!_map.IsPassable(x - dx, y + 1, false) && _map.IsPassable(x, y + 1, false)) ||
-                        (!_map.IsPassable(x - dx, y - 1, false) && _map.IsPassable(x, y - 1, false))) {
-                        return step;
-                    }
-                } else {
-                    if ((!_map.IsPassable(x + 1, y - dy, false) && _map.IsPassable(x + 1, y, false)) ||
-                        (!_map.IsPassable(x - 1, y - dy, false) && _map.IsPassable(x - 1, y, false))) {
-                        return step;
-                    }
                 }
             }
         }
@@ -237,6 +222,26 @@ namespace PathFinding {
                 
                 int step = current.JumpStep[dirIndex];
                 if (step == 0) continue; // 如果方向上没有可扩展步数，跳过
+
+                if (dir.x != 0 && dir.y != 0) {
+                    bool needContinue = false;
+                    for (int i = 0; i < step; i++) {
+                        Vector2Int np = current.Pos + step * i * dir;
+                        if (!_map.CanMoveTo(np.x, np.y, dir)) {
+                            if (_map.IsPassable(np.x - dir.x, np.y)) {
+                                _successors.Add(_pointsMap[np.x - dir.x, np.y]);
+                            } 
+                            if (_map.IsPassable(np.x, np.y - dir.y)){
+                                _successors.Add(_pointsMap[np.x, np.y - dir.y]);
+                            }
+                            needContinue = true;
+                            break;
+                        }
+                    }
+                    if (needContinue) {
+                        continue;
+                    }
+                }
                 
                 Vector2Int tp;
                 if ((targetDirX == 0 || dir.x == targetDirX) &&
