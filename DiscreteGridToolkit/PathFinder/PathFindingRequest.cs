@@ -16,12 +16,13 @@ namespace PathFinding {
         public readonly bool CanUseCache;
 
         public bool IsFound => ResultPath is { Count: > 0 };
-        public bool IsFinished => ReprocessedPath != null;
+        public bool IsFinished {get; private set; }
         public List<Vector2Int> ResultPath { get; set; }
         public List<Vector2Int> ReprocessedPath {
             get => _reprocessedPath;
             set {
                 _reprocessedPath = value;
+                IsFinished = true;
                 PathFoundHandler?.Invoke(this);
             }
         }

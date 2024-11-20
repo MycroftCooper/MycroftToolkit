@@ -2,6 +2,7 @@ using Sirenix.OdinInspector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using MycroftToolkit.DiscreteGridToolkit;
 using MycroftToolkit.QuickCode.FrameTask;
 using UnityEngine;
@@ -44,7 +45,7 @@ namespace PathFinding {
         
         private bool FirstCheck(PathFindingRequest request) {
             if (!useLineOfSightFirstCheck || !_map.IsLineOfSight(request.StartPos, request.EndPos)) return false;
-            request.ResultPath = new List<Vector2Int>{request.EndPos};
+            request.ResultPath = new List<Vector2Int>{request.StartPos ,request.EndPos};
             request.ReprocessedPath = new List<Vector2Int>(request.ResultPath);
             return true;
         }
@@ -119,6 +120,11 @@ namespace PathFinding {
                 var p = GetReprocess(request.Reprocess);
                 request.ReprocessedPath = p != null ? p.ReprocessPath(request.ResultPath, _map) : new List<Vector2Int>(request.ResultPath);
             }
+        }
+        
+        public void CancelRequest(PathFindingRequest request) {
+            var task = Tasks.First(t => t.Request == request );
+            CancelTask(task);
         }
 
         private bool IsRequestValid(PathFindingRequest request) {
