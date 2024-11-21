@@ -1,10 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MycroftToolkit.QuickCode.FrameTask {
     public class FrameTaskScheduler<T> : MonoBehaviour where T : FrameTask {
         #region 任务操作
         private readonly PriorityQueue<T> _requestQueue = new();
+        public IEnumerable<T> Tasks => _requestQueue;
         public int TaskCount => _requestQueue.Count;
         protected bool ContainsTask(T t) => _requestQueue.Contains(t);
 
