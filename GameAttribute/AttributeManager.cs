@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace GameAttribute {
-    public class AttributeManager {
+    public partial class AttributeManager : MonoBehaviour {
         public string Owner;
         internal Dictionary<string, Attribute> Attributes = new Dictionary<string, Attribute>();
 

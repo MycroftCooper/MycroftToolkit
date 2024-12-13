@@ -114,16 +114,15 @@ namespace GameAttribute {
                 return;
             }
             
-            FinalValue = CalculateFloatFinalValue();
+            FinalValue = CalculateFinalValue(BaseValue, Modifiers);
             RoundedFinalValue = Mathf.RoundToInt(FinalValue);// 四舍五入
         }
 
-        protected virtual float CalculateFloatFinalValue() {
-            float baseVal = Convert.ToSingle(BaseValue);
+        private float CalculateFinalValue(float baseVal, List<AttributeModifier> modifiers) {
             float sumAdd = 0f;
             float productMul = 1f;
 
-            foreach (var mod in Modifiers) {
+            foreach (var mod in modifiers) {
                 switch (mod.Type) {
                     case ModifierTypes.Add:
                         sumAdd += Convert.ToSingle(mod.Value);
