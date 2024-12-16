@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-namespace GameAttribute {
+namespace AttributeSystem {
     public class AttributeManager : MonoBehaviour {
         public virtual string Owner { get; internal set; }
         internal Dictionary<string, Attribute> Attributes = new Dictionary<string, Attribute>();

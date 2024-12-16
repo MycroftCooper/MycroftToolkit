@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace GameAttribute {
+namespace AttributeSystem {
     public class AttributeChangedData {
         public float OldValue;
         public float NewValue;

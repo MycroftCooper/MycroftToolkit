@@ -1,4 +1,4 @@
-namespace GameAttribute {
+namespace AttributeSystem {
     public class AttributeTest : AttributeManager {
         private const string OwnerName = "Owner";
         public override string Owner => OwnerName;

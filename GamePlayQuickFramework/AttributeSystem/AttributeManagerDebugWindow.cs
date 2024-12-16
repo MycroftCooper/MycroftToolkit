@@ -7,7 +7,7 @@ using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
 
-namespace GameAttribute.Editor {
+namespace AttributeSystem.Editor {
     public class AttributeManagerDebugWindow : OdinEditorWindow {
         private const string WindowTitle = "Attribute Manager Debug";
 

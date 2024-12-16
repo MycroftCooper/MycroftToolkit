@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace GameAttribute {
+namespace AttributeSystem {
     [Serializable]
     public class Attribute {
         public string Owner { get; internal set; }
