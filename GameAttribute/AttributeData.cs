@@ -52,8 +52,8 @@ namespace GameAttribute {
                 name = attribute.Name,
                 baseValue = ConvertToString(attribute.BaseValue),
                 modifiers = attribute.Modifiers.Select(m => m.ToSaveData()).ToList(),
-                minValueAttributeName = attribute.MinValue?.Name,
-                maxValueAttributeName = attribute.MaxValue?.Name
+                minValueAttributeName = attribute.minValue?.Name,
+                maxValueAttributeName = attribute.maxValue?.Name
             };
             return saveData;
         }
@@ -89,7 +89,6 @@ namespace GameAttribute {
             mgr.Attributes.Clear();
 
             // 第一阶段：创建所有属性，但不处理Min/Max和Modifiers，只构造基础属性
-            Dictionary<string, AttributeSaveData> attrSaveDataMap = saveData.attributes.ToDictionary(a => a.name, a => a);
             foreach (var asd in saveData.attributes) {
                 var attr = asd.FromSaveData();
                 mgr.AddAttribute(attr);
@@ -103,12 +102,12 @@ namespace GameAttribute {
                 bool needCalculate = false;
                 if (!string.IsNullOrEmpty(asd.minValueAttributeName)) {
                     var minAttr = mgr.GetAttribute(asd.minValueAttributeName);
-                    attr.MinValue = minAttr;
+                    attr.minValue = minAttr;
                     needCalculate = true;
                 }
                 if (!string.IsNullOrEmpty(asd.maxValueAttributeName)) {
                     var maxAttr = mgr.GetAttribute(asd.maxValueAttributeName);
-                    attr.MaxValue = maxAttr;
+                    attr.maxValue = maxAttr;
                     needCalculate = true;
                 }
 

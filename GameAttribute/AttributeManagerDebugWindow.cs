@@ -140,16 +140,16 @@ namespace GameAttribute.Editor {
                 // 是Min或Max属性
                 // 需要找到对应的主属性，如果主属性存在，则清除其MinValue或MaxValue引用
                 if (Attributes.TryGetValue(mainAttrName, out Attribute mainAttr) && mainAttr != null) {
-                    if (isMinAttr && mainAttr.MinValue != null && mainAttr.MinValue.Name == attributeName) {
+                    if (isMinAttr && mainAttr.minValue != null && mainAttr.minValue.Name == attributeName) {
                         // 清除主属性的MinValue
-                        mainAttr.MinValue = null;
+                        mainAttr.minValue = null;
                         Debug.Log(
                             $"[AttributeManager] Cleared MinValue of {mainAttrName} since {attributeName} was removed.");
                     }
 
-                    if (isMaxAttr && mainAttr.MaxValue != null && mainAttr.MaxValue.Name == attributeName) {
+                    if (isMaxAttr && mainAttr.maxValue != null && mainAttr.maxValue.Name == attributeName) {
                         // 清除主属性的MaxValue
-                        mainAttr.MaxValue = null;
+                        mainAttr.maxValue = null;
                         Debug.Log(
                             $"[AttributeManager] Cleared MaxValue of {mainAttrName} since {attributeName} was removed.");
                     }
@@ -232,10 +232,10 @@ namespace GameAttribute.Editor {
         public float FinalValue => _attribute.FinalValue;
 
         [ShowInInspector, ReadOnly, LabelText("Min"), TableColumnWidth(80)]
-        public float Min => _attribute.MinValue?.FinalValue ?? float.MinValue;
+        public float Min => _attribute.minValue?.FinalValue ?? float.MinValue;
 
         [ShowInInspector, ReadOnly, LabelText("Max"), TableColumnWidth(80)]
-        public float Max => _attribute.MinValue?.FinalValue ?? float.MaxValue;
+        public float Max => _attribute.maxValue?.FinalValue ?? float.MaxValue;
 
         [TableList(AlwaysExpanded = true, IsReadOnly = true), PropertyOrder(1)]
         [ShowInInspector, LabelText("Modifiers"), TableColumnWidth(250)]

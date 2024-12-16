@@ -5,28 +5,40 @@ using System.Text;
 using UnityEngine;
 
 namespace GameAttribute {
+    [Serializable]
     public class Attribute {
-        public readonly string Owner;
+        public string Owner { get; internal set; }
         public readonly string Name;
-        public readonly float BaseValue;
+        [SerializeField] private float baseValue;
         
+        public float BaseValue => baseValue;
         public float FinalValue { get; private set; }
         public int RoundedFinalValue { get; private set; }
-        public bool HasClamp => MinValue != null || MaxValue != null;
-        public Attribute MaxValue;
-        public Attribute MinValue;
+        public bool HasClamp => minValue != null || maxValue != null;
+        [SerializeField] internal Attribute maxValue;
+        [SerializeField] internal Attribute minValue;
         
         public bool IsLocked => Modifiers.Any(m => m.Type == ModifierTypes.Locked);
         internal List<AttributeModifier> Modifiers = new List<AttributeModifier>();
         public Func<AttributeModifier, bool, bool> CanModifierChange;
         public Action<AttributeChangedData> OnValueChanged;
         
+        public Attribute(string name) {
+            Owner = null;
+            Name = name;
+            if (string.IsNullOrEmpty(name)) {
+                Debug.LogWarning("[Attribute] name is empty!");
+            }
+
+            CalculateFinalValue();
+        }
+        
         public Attribute(string name, string owner = null, float baseValue = 0, Attribute min = null, Attribute max = null) {
             Owner = owner;
             Name = name;
-            BaseValue = baseValue;
-            MaxValue = max;
-            MinValue = min;
+            this.baseValue = baseValue;
+            maxValue = max;
+            minValue = min;
             if (string.IsNullOrEmpty(owner)) {
                 Debug.LogWarning("[Attribute] owner is empty!");
             }
@@ -36,7 +48,7 @@ namespace GameAttribute {
 
             CalculateFinalValue();
         }
-
+        
         public void AddModifier(AttributeModifier modifier) {
             if (IsLocked) {
                 return;
@@ -102,7 +114,7 @@ namespace GameAttribute {
         internal void CalculateFinalValue() {
             // 检查Reset类型的Modifier
             if (Modifiers.Any(m => m.Type == ModifierTypes.Reset)) {
-                FinalValue = BaseValue;
+                FinalValue = baseValue;
                 Modifiers.Clear();
                 return;
             }
@@ -114,7 +126,7 @@ namespace GameAttribute {
                 return;
             }
             
-            FinalValue = CalculateFinalValue(BaseValue, Modifiers);
+            FinalValue = CalculateFinalValue(baseValue, Modifiers);
             RoundedFinalValue = Mathf.RoundToInt(FinalValue);// 四舍五入
         }
 
@@ -135,8 +147,8 @@ namespace GameAttribute {
             float final = (baseVal + sumAdd) * productMul;
 
             if (!HasClamp) return final;
-            float minVal = MinValue != null ? Convert.ToSingle(MinValue.FinalValue) : float.MinValue;
-            float maxVal = MaxValue != null ? Convert.ToSingle(MaxValue.FinalValue) : float.MaxValue;
+            float minVal = minValue != null ? Convert.ToSingle(minValue.FinalValue) : float.MinValue;
+            float maxVal = maxValue != null ? Convert.ToSingle(maxValue.FinalValue) : float.MaxValue;
             final = Mathf.Clamp(final, minVal, maxVal);
             return final;
         }
@@ -146,7 +158,7 @@ namespace GameAttribute {
             foreach (var modifier in Modifiers) {
                 modifiersStr.Append(modifier + "\n");
             }
-            return $"Attribute> Owner:{Owner} Name:{Name} BaseValue:{BaseValue} FinalValue:{FinalValue}\n{modifiersStr}";
+            return $"Attribute> Owner:{Owner} Name:{Name} BaseValue:{baseValue} FinalValue:{FinalValue}\n{modifiersStr}";
         }
     }
     
