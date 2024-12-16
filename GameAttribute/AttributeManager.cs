@@ -1,8 +1,9 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace GameAttribute {
-    public partial class AttributeManager : MonoBehaviour {
+    public class AttributeManager : MonoBehaviour {
         public string Owner;
         internal Dictionary<string, Attribute> Attributes = new Dictionary<string, Attribute>();
 
@@ -18,7 +19,7 @@ namespace GameAttribute {
                 return;
             }
             Attribute a = new Attribute(attributeName, Owner, baseValue);
-            Attributes.Add(attributeName, a);
+            AddAttribute(a);
         }
         
         public void AddAttribute(string attributeName, float baseValue, float minValue, float maxValue) {
@@ -47,6 +48,11 @@ namespace GameAttribute {
             return attribute?.FinalValue ?? 0;
         }
 
+        public int GetAttributeRoundedFinalValue(string attributeName) {
+            var attribute = GetAttribute(attributeName);
+            return attribute.RoundedFinalValue;
+        }
+
         public void AddModifierToAttribute(string attributeName, ModifierTypes type, string source, float value = 0) {
             var attribute = GetAttribute(attributeName);
             if (attribute == null) {
@@ -55,7 +61,12 @@ namespace GameAttribute {
             AttributeModifier modifier = new AttributeModifier(type, source, value);
             attribute.AddModifier(modifier);
         }
-
+        
+        public void RemoveModifierBySource(string source, string attributeName) {
+            var attribute = GetAttribute(attributeName);
+            attribute?.RemoveModifiersBySource(source);
+        }
+        
         public void RemoveModifierBySource(string source) {
             if (Attributes == null || Attributes.Count == 0) {
                 return;
@@ -64,5 +75,8 @@ namespace GameAttribute {
                 a.RemoveModifiersBySource(source);
             }
         }
+        
+        public Action<AttributeChangedData> OnAttributeChanged;
+        
     }
 }
