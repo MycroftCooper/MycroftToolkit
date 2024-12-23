@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using MycroftToolkit.DiscreteGridToolkit;
 using MycroftToolkit.DiscreteGridToolkit.Square;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -194,6 +195,18 @@ namespace MycroftToolkit.QuickCode {
             }
 
             return output;
+        }
+        
+        public static void SetReadable(this Texture2D texture, bool readable) {
+            string path = AssetDatabase.GetAssetPath(texture);
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+
+            if (importer != null) {
+                importer.isReadable = readable;
+                importer.SaveAndReimport();
+            } else {
+                Debug.LogError("Failed to get TextureImporter.");
+            }
         }
     }
 }
