@@ -2,6 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace MycroftToolkit.QuickCode.Structure {
+    public enum QuadTreeNeighborDir { Up, Down, Left, Right }
+    public enum QuadTreeChildDir { RightUp, RightDown, RightLeft, LeftDown, LeftUp }
+
     public class QuadTreeNode<T> {
         public Rect Bounds { get; }
         public bool IsLeaf => _children == null || _children.Length == 0;
@@ -19,10 +22,27 @@ namespace MycroftToolkit.QuickCode.Structure {
     public class QuadTree<T> {
         private readonly QuadTreeNode<T> _root;
         public Rect Bounds => _root.Bounds;
+        public readonly int MaxDepth;
+        public readonly int MinChunkSize;
 
-        public QuadTree(Rect bounds) {
-
+        public QuadTree(Rect bounds, int maxDepth) {
+            maxDepth = maxDepth;
+            _root = new QuadTreeNode<T>(bounds);
         }
+
+        public QuadTreeNode<T> GetNode(Vector2 pos, int depth) {
+            return null;
+        }
+
+        public bool AddObject(T obj, Vector2 pos, int depth) {
+            return false;
+        }
+
+        public bool RemoveObject(T obj, Vector2 pos, int depth) {
+            return false;
+        }
+        
+        
 
         // 插入对象
         public bool Insert(QuadTreeNode<T> obj) {
