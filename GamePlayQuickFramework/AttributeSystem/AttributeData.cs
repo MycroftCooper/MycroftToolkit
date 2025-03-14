@@ -2,26 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace AttributeSystem {
-    public class AttributeChangedData {
-        public float OldValue;
-        public float NewValue;
-        public Attribute Attribute;
-        public List<AttributeModifier> Modifiers;
-        public bool IsAddModifier;
-        
-        public override string ToString() {
-            var modifiersStr = new StringBuilder();
-            foreach (var modifier in Modifiers) {
-                modifiersStr.Append(modifier + "\n");
-            }
-            return $"AttributeChangedData> OldValue:{OldValue}, NewValue:{NewValue}, IsAddModifier:{IsAddModifier}, \n" +
-                   $"Modifiers:[\n{modifiersStr}\n], \nAttribute:{Attribute}";
-        }
-    }
-
     [Serializable]
     public class AttributesSaveData {
         public string owner;

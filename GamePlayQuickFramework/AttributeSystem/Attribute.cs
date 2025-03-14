@@ -21,7 +21,7 @@ namespace AttributeSystem {
         public bool IsLocked => Modifiers.Any(m => m.Type == ModifierTypes.Locked);
         internal List<AttributeModifier> Modifiers = new List<AttributeModifier>();
         public Func<AttributeModifier, bool, bool> CanModifierChange;
-        public Action<AttributeChangedData> OnValueChanged;
+        public Action<AttributeChangedInfo> OnValueChanged;
         
         public Attribute(string name) {
             Owner = null;
@@ -61,14 +61,14 @@ namespace AttributeSystem {
             
             float oldValue = FinalValue;
             CalculateFinalValue();
-            AttributeChangedData data = new AttributeChangedData {
+            AttributeChangedInfo info = new AttributeChangedInfo {
                 OldValue = oldValue,
                 NewValue = FinalValue,
-                Modifiers = new List<AttributeModifier> { modifier },
+                ChangedModifiers = new Dictionary<AttributeModifier, ModifierChangeTypes> 
+                    { {modifier, ModifierChangeTypes.Add} },
                 Attribute = this,
-                IsAddModifier = true
             };
-            OnValueChanged?.Invoke(data);
+            OnValueChanged?.Invoke(info);
         }
 
         public void RemoveModifier(AttributeModifier modifier) {
@@ -83,32 +83,36 @@ namespace AttributeSystem {
             
             float oldValue = FinalValue;
             CalculateFinalValue();
-            AttributeChangedData data = new AttributeChangedData {
+            AttributeChangedInfo info = new AttributeChangedInfo {
                 OldValue = oldValue,
                 NewValue = FinalValue,
-                Modifiers = new List<AttributeModifier> { modifier },
-                Attribute = this,
-                IsAddModifier = false
+                ChangedModifiers = new Dictionary<AttributeModifier, ModifierChangeTypes> 
+                    { {modifier, ModifierChangeTypes.Remove} },
+                Attribute = this
             };
-            OnValueChanged?.Invoke(data);
+            OnValueChanged?.Invoke(info);
         }
 
         public void RemoveModifiersBySource(string source) {
             float oldValue = FinalValue;
-            if (Modifiers.Any(m => m.Type == ModifierTypes.Locked && m.Source != source)) {
-                return;
-            }
+            if (Modifiers.Any(m => m.Type == ModifierTypes.Locked)) return;
             var targets = Modifiers.FindAll(m => m.Source == source);
-            Modifiers.RemoveAll(m => m.Source == source);
+            if(targets.Count == 0) return;
+            
+            var changedModifiers = new Dictionary<AttributeModifier, ModifierChangeTypes>();
+            foreach (var m in targets) {
+                Modifiers.Remove(m);
+                changedModifiers.Add(m, ModifierChangeTypes.Remove);
+            }
             CalculateFinalValue();
-            AttributeChangedData data = new AttributeChangedData {
+            
+            AttributeChangedInfo info = new AttributeChangedInfo {
                 OldValue = oldValue,
                 NewValue = FinalValue,
-                Modifiers = targets,
+                ChangedModifiers = changedModifiers,
                 Attribute = this,
-                IsAddModifier = false
             };
-            OnValueChanged?.Invoke(data);
+            OnValueChanged?.Invoke(info);
         }
 
         internal void CalculateFinalValue() {
@@ -147,8 +151,8 @@ namespace AttributeSystem {
             float final = (baseVal + sumAdd) * productMul;
 
             if (!HasClamp) return final;
-            float minVal = minValue != null ? Convert.ToSingle(minValue.FinalValue) : float.MinValue;
-            float maxVal = maxValue != null ? Convert.ToSingle(maxValue.FinalValue) : float.MaxValue;
+            float minVal = minValue?.FinalValue ?? float.MinValue;
+            float maxVal = maxValue?.FinalValue ?? float.MaxValue;
             final = Mathf.Clamp(final, minVal, maxVal);
             return final;
         }
@@ -160,29 +164,5 @@ namespace AttributeSystem {
             }
             return $"Attribute> Owner:{Owner} Name:{Name} BaseValue:{baseValue} FinalValue:{FinalValue}\n{modifiersStr}";
         }
-    }
-    
-    public enum ModifierTypes { 
-        Add, // 加法
-        Multiply, // 乘法
-        Fixed, // 固定为某个值
-        Locked, // 锁定属性不可改变
-        Reset // 重置为BaseValue并移除其他modifier
-    }
-    
-    public class AttributeModifier {
-        public readonly ModifierTypes Type;
-        public readonly float Value;
-        public readonly string Source;
-
-        public AttributeModifier(ModifierTypes type, string source, float value = 0) {
-            Type = type;
-            Value = value;
-            Source = source;
-            if (string.IsNullOrEmpty(source)) {
-                Debug.LogWarning("[AttributeModifier] source is empty!");
-            }
-        }
-        public override string ToString() => $"AttributeModifier> (Type:{Type}, Value:{Value}, Source:{Source})";
     }
 }

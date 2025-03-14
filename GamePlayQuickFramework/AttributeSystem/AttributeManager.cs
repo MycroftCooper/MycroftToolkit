@@ -103,6 +103,6 @@ namespace AttributeSystem {
             }
         }
         
-        public Action<AttributeChangedData> OnAttributeChanged;
+        public Action<AttributeChangedInfo> OnAttributeChanged;
     }
 }
