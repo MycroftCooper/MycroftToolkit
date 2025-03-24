@@ -3,9 +3,8 @@ using UnityEngine;
 
 namespace  MycroftToolkit.QuickCode {
     public class GeneralDictionary<TKey> where TKey : notnull {
-        public readonly Dictionary<TKey, object> Dict;
+        public readonly Dictionary<TKey, object> Dict = new();
         public int Count => Dict.Count;
-        public GeneralDictionary() => Dict = new Dictionary<TKey, object>();
         public void Add(TKey key, object value) => Dict.Add(key, value);
         public TValue Get<TValue>(TKey key) {
             if (Dict.TryGetValue(key, out var output)) {
